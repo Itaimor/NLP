@@ -1,1 +1,8 @@
 datasets>=3.0.0
+
+# For EDA_DataSplit.py:
+pandas
+matplotlib
+datasets
+scikit-learn
+iterative-stratification
