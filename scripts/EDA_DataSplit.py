@@ -43,7 +43,7 @@ def data_loading_combining():
     print("Loading data from hf_cache ... ", end="")
     dataset = load_dataset("adsabs/SciX_UAT_keywords")
     print("Done!")
-    print(dataset)
+    # print(dataset)
 
     # Merges:
     train_df = dataset["train"].to_pandas()
@@ -113,7 +113,8 @@ def plot_label_frequency_distribution(
         label_stats,
         y_tick_interval=50,
         figsize=(16, 7),
-        title="UAT Label Frequency Distribution"
+        title="UAT Label Frequency Distribution",
+        ax=None
 ):
     """
     Plot the frequency distribution of labels, sorted from most frequent to least frequent.
@@ -125,6 +126,9 @@ def plot_label_frequency_distribution(
     --- y_tick_interval : int
     --- figsize : tuple
     --- title : str
+    --- ax : matplotlib.axes.Axes, optional
+        If provided, the plot is drawn onto this axis (e.g. one panel of a combined
+        figure) instead of creating and showing its own standalone figure.
     Output: None
     """
 
@@ -154,7 +158,13 @@ def plot_label_frequency_distribution(
 
     percentages = [0, 25, 50, 75, 100]
 
-    fig, ax = plt.subplots(figsize=figsize)
+    # If no axis was supplied, this plot is being made standalone: create its
+    # own figure and remember to show() it at the end. If an axis WAS supplied
+    # (e.g. from plot_label_analysis), just draw onto it and let the caller
+    # handle figure-level layout/showing.
+    standalone = ax is None
+    if standalone:
+        fig, ax = plt.subplots(figsize=figsize)
 
     ax.bar(range(n_labels), stats["count"])
     ax.set_xlabel("Labels (sorted by frequency)")
@@ -192,8 +202,9 @@ def plot_label_frequency_distribution(
 
     ax.grid(axis="y", alpha=0.3)
 
-    plt.tight_layout()
-    plt.show()
+    if standalone:
+        plt.tight_layout()
+        plt.show()
 
     return None
 
@@ -203,7 +214,8 @@ def plot_label_frequency_bins(
         bins=None,
         bin_labels=None,
         figsize=(14, 6),
-        title="Distribution of UAT Labels by Frequency Range"
+        title="Distribution of UAT Labels by Frequency Range",
+        ax=None
 ):
     """
     Plot the number of labels that fall into different frequency ranges.
@@ -216,6 +228,9 @@ def plot_label_frequency_bins(
     --- bin_labels : list
     --- figsize : tuple
     --- title : str
+    --- ax : matplotlib.axes.Axes, optional
+        If provided, the plot is drawn onto this axis instead of creating and
+        showing its own standalone figure.
     Output: None
     """
 
@@ -256,7 +271,9 @@ def plot_label_frequency_bins(
     )
 
     # Plot
-    fig, ax = plt.subplots(figsize=figsize)
+    standalone = ax is None
+    if standalone:
+        fig, ax = plt.subplots(figsize=figsize)
 
     bars = ax.bar(
         binned_distribution.index.astype(str),
@@ -279,13 +296,20 @@ def plot_label_frequency_bins(
             va="bottom"
         )
 
-    plt.tight_layout()
-    plt.show()
+    if standalone:
+        plt.tight_layout()
+        plt.show()
 
     return None
 
 
-def plot_label_analysis(label_stats, dataset_name="Dataset", y_tick_interval=50):
+def plot_label_analysis(
+        label_stats,
+        dataset_name="Dataset",
+        y_tick_interval=50,
+        combined=True,
+        figsize=(20, 7)
+):
     """
     Plot both label-frequency visualizations for a dataset.
 
@@ -297,20 +321,50 @@ def plot_label_analysis(label_stats, dataset_name="Dataset", y_tick_interval=50)
     --- label_stats : pandas.DataFrame
     --- dataset_name : str
     --- y_tick_interval : int
+    --- combined : bool
+        If True (default), both plots are drawn side-by-side as two panels of
+        ONE figure. If False, each plot is shown in its own separate figure
+        (the original behavior).
+    --- figsize : tuple
+        Size of the combined figure. Only used when combined=True.
     Output: None
     """
+
+    if not combined:
+        plot_label_frequency_distribution(
+            label_stats,
+            y_tick_interval=y_tick_interval,
+            title=f"UAT Label Frequency Distribution - {dataset_name}"
+        )
+
+        print(" ")
+        plot_label_frequency_bins(
+            label_stats,
+            title=f"UAT Label Frequency Ranges - {dataset_name}"
+        )
+        return None
+
+    # Combined: one figure, two panels sharing the same label_stats.
+    fig, (ax_dist, ax_bins) = plt.subplots(1, 2, figsize=figsize)
 
     plot_label_frequency_distribution(
         label_stats,
         y_tick_interval=y_tick_interval,
-        title=f"UAT Label Frequency Distribution - {dataset_name}"
+        title="Frequency Distribution",
+        ax=ax_dist
     )
 
-    print(" ")
     plot_label_frequency_bins(
         label_stats,
-        title=f"UAT Label Frequency Ranges - {dataset_name}"
+        title="Frequency Ranges",
+        ax=ax_bins
     )
+
+    fig.suptitle(f"UAT Label Analysis - {dataset_name}", fontsize=14, fontweight="bold")
+    plt.tight_layout()
+    plt.show()
+
+    return None
 
 
 ########################################################################################################################
@@ -334,21 +388,19 @@ def EDA_Analysis():
     dict_of_label_stats = {}  # Stores label statistics for each dataset
 
     # Analyze each dataset:
-    print("\n======== Exploratory Data Analysis (EDA)========\n")
-    print("Analyzing original datasets via focusing on the labels.")
+    print("\nAnalyzing original datasets by focusing on the labels:")
     for name, dataframe in dict_of_dfs.items():
-        print(f"\n===== {name.upper()} =====\n")
+        print(f"===== Original {name} =====")
 
         # Calculate label statistics:
         label_stats = get_label_stats(name, dataframe, True)
-
         # Save statistics for later use:
         dict_of_label_stats[name] = label_stats
-
         # Plot label analysis:
         plot_label_analysis(label_stats, dataset_name=name)
+        print(" ")
 
-    print("\nDone plotting the original splits datasets.")
+    print("\nDone plotting the original splits datasets.\n")
     return dict_of_dfs, dict_of_label_stats
 
 
@@ -362,10 +414,11 @@ def analyze_and_split_by_k(
         dataframe,
         label_stats,
         k,
+        chosen_seed,
         labels_col="verified_uat_ids",
-        split_ratios=(0.7, 0.1, 0.2),
-        random_state=42
-):
+        split_ratios=(0.7, 0.1, 0.2)
+    ):
+
     """
     Analyze the effect of a minimum label-frequency threshold K.
 
@@ -381,11 +434,11 @@ def analyze_and_split_by_k(
     Inputs:
     --- dataframe : pandas.DataFrame
     --- label_stats : pandas.DataFrame
-    --- k : int
+    --- k : positive int
+    --- chosen_seed: positive int
     --- labels_col : str
     --- split_ratios : tuple
         (train_ratio, validation_ratio, test_ratio)
-    --- random_state : int
 
     Outputs:
     --- results : dict
@@ -430,9 +483,7 @@ def analyze_and_split_by_k(
     # K filtering
     # --------------------------------------------------------
 
-    print(f"\n{'=' * 60}")
-    print(f"K = {k} ANALYSIS")
-    print(f"{'=' * 60}\n")
+    print(f"========  K = {k} ANALYSIS  ========")
 
     documents_before = len(dataframe)
     labels_before = len(label_stats)
@@ -552,7 +603,7 @@ def analyze_and_split_by_k(
     first_splitter = MultilabelStratifiedShuffleSplit(
         n_splits=1,
         test_size=temp_ratio,
-        random_state=random_state
+        random_state=chosen_seed
     )
 
     train_idx, temp_idx = next(
@@ -590,7 +641,7 @@ def analyze_and_split_by_k(
     second_splitter = MultilabelStratifiedShuffleSplit(
         n_splits=1,
         test_size=test_ratio_inside_temp,
-        random_state=random_state
+        random_state=chosen_seed
     )
 
     validation_idx, test_idx = next(
@@ -642,7 +693,7 @@ def analyze_and_split_by_k(
         split_label_stats[name] = stats
 
         print(
-            f"\n{name.upper()}: "
+            f"{name.upper()}: "
             f"{len(split_df):,} documents, "
             f"{len(stats):,} unique labels"
         )
@@ -830,23 +881,12 @@ def analyze_and_split_by_k(
     # --------------------------------------------------------
 
     results = {
-        "filtered_dataframe":
-            filtered_dataframe,
-
-        "filtered_label_stats":
-            filtered_label_stats,
-
-        "splits":
-            splits,
-
-        "split_label_stats":
-            split_label_stats,
-
-        "coverage_table":
-            coverage_table,
-
-        "problematic_labels":
-            problematic_labels
+        "filtered_dataframe": filtered_dataframe,
+        "filtered_label_stats": filtered_label_stats,
+        "splits": splits,
+        "split_label_stats": split_label_stats,
+        "coverage_table": coverage_table,
+        "problematic_labels": problematic_labels,
     }
 
     return results
@@ -856,7 +896,7 @@ def analyze_and_split_by_k(
 # Section: OVERALL
 ########################################################################################################################
 
-def main_EDA_DataSplit(k_list):
+def main_EDA_DataSplit(k_list, chosen_seed):
     """
     The main function for the whole EDA and K-Analysis section.
     This function should be called from the main project file.
@@ -869,6 +909,7 @@ def main_EDA_DataSplit(k_list):
     --- Data already exists in hf_cache. (user already ran "download_data.py")
     Inputs:
     --- k_list : list of positive integers
+    --- chosen_seed: positive int
     Outputs:
     --- results : dict,  contains the splits to train, validation and test
     """
@@ -880,8 +921,7 @@ def main_EDA_DataSplit(k_list):
     if len(k_list) == 0 or (False in [isinstance(k, int) and k > 0 for k in k_list]):
         raise ValueError("EDA: k_list input must only contain positive integers.")
 
-    print("Starts running EDA and Data Splitting process ...")
-
+    print("\n======== Starts EDA and Data Splitting process ========")
     # Loads data and EDA process:
     dict_of_dfs, dict_of_label_stats = EDA_Analysis()
 
@@ -891,33 +931,30 @@ def main_EDA_DataSplit(k_list):
     # analyze_and_split_by_k filters/splits on verified_uat_ids (see its
     # labels_col default), so it needs label_stats computed on that same
     # column -- not the label-string stats used for the EDA plots above.
-    full_label_stats_ids = get_label_stats(
-        "full",
-        full_df,
-        labels_col="verified_uat_ids"
-    )
+    full_label_stats_ids = get_label_stats("full", full_df, labels_col="verified_uat_ids")
 
     # Analysis:
+    print("======== Starts analyzing and splitting according to chosen k ========")
     results_by_k = {}
     for checked_k in k_list:
         results_by_k[checked_k] = analyze_and_split_by_k(
             dataframe=full_df,
             label_stats=full_label_stats_ids,
-            k=checked_k
+            k=checked_k,
+            chosen_seed=chosen_seed
         )
+
+    print("\n======== Done running EDA and Data Splitting ! ========")
 
     # Returns only the split
     # A reminder: this function should be called from the main project file
-    i = k_list[0]
-    datasets = results_by_k[i]["splits"]
-
-    print("EDA and Data Splitting run was successfully ended!")
-
-    return datasets
-
+    chosen_k = k_list[0]
+    chosen_results = results_by_k[chosen_k]
+    return chosen_results["splits"]
 
 
 
 if __name__ == "__main__":
-    k_values = [1, 14]  ## Change me everytime, TODO ##
-    main_EDA_DataSplit(k_values)
+    k_values = [10]  ## Change me everytime, TODO ##
+    seed = 42           ## Change me everytime, TODO ##
+    main_EDA_DataSplit(k_values, seed)
