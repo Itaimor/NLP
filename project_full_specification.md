@@ -41,7 +41,13 @@ Long-tail multi-label classification and parameter-efficient fine-tuning are wel
 - Balancing methods help the tail but do not fully solve it (Huang et al., EMNLP 2021).
 - Per-frequency-band (head/medium/tail) evaluation is itself an established technique (Huang et al., EMNLP 2021), including on a specialized scientific vocabulary (they use PubMed with ~18k MeSH medical labels). **So the frequency-band breakdown is NOT our contribution.**
 
-**The gap we fill (our actual contribution):** a controlled comparison of a small domain-pretrained encoder (SciBERT) against a quantized generative LLM (Gemma + QLoRA), resolved across the label-frequency spectrum, on the astronomy UAT. A literature search (including a dedicated deep-search tool) found no single paper doing all four of: multi-label text classification + small-encoder-vs-large-generative-LLM + LoRA/QLoRA quantized fine-tuning + results split by label frequency. Near-miss papers each miss at least one of these four elements. Note: our generative model is **decoder-only** (Gemma), which distinguishes us from prior encoder-vs-generative work that used encoder-decoder models like T5.
+**Concurrent work on this exact corpus.** Alkan et al. (arXiv:2604.02156, April 2026 — an unrefereed preprint by the dataset's own authors at NASA ADS) introduce this corpus as *AstroConcepts* and report BERT / SciBERT / astroBERT against a prompted generative LLM (DeepSeek-V3), with results split by frequency band. That covers three of the four elements we originally claimed as novel, on our data, with our encoder. The full text is in `Articles/AstroConcepts - Alkan et al., arXiv 2026.md`. **We cite it as concurrent work and narrow our claim accordingly** — it is a preprint posted four months ago, not a published paper, so this is concurrent research rather than a settled result we are duplicating.
+
+**The gap that remains (our actual contribution), in two parts:**
+
+1. **The PEFT arm they could not run.** Their generative model is *prompted*, never fine-tuned. They state plainly: *"Due to computational resource constraints, we were unable to include Qwen models in the fine-tuning experiments."* Parameter-efficient quantized fine-tuning (QLoRA) of a small open-weight generative model on this benchmark is exactly the missing cell. Our question becomes sharper and better anchored than the original four-way claim: **a prompted 671B API model beats a domain-pretrained encoder on the tail (0.198 vs 0.081) — does that advantage survive when the generative model is a 1-4B open-weight model tuned on one GPU?** Published reference points to beat: SciBERT 0.023, astroBERT 0.081, DeepSeek-V3 0.198.
+
+2. **An evaluation finding that costs no compute.** Of the 1,418 concepts in the tail band, only **359** have any test instance; the other **1,059 (74.7%)** are held entirely in training by the corpus's own split rule and are therefore structurally unable to score above zero. Any macro-average over the full band is deflated by a factor of 1,418/359 = **3.95x**. The preprint states only that it uses "Macro-F1, which averages per-label F1 scores" and never gives the denominator or mentions the zero-support concepts. Separately, we measure that the decision threshold moves tail F1 by up to **24.6x**, a factor the reference numbers never report. **Band-wise long-tail comparisons in this literature are therefore not currently interpretable**, and demonstrating that is a contribution in its own right. The course guidelines explicitly invite this shape of project: *"ways to improve the evaluation of existing methods, identifying problems that LLMs struggle with."*
 
 ---
 
@@ -50,13 +56,14 @@ Long-tail multi-label classification and parameter-efficient fine-tuning are wel
 - **Name / source:** `adsabs/SciX_UAT_keywords` on HuggingFace, maintained by the official NASA ADS / Science Explorer (SciX) team.
 - **License:** MIT (fully open, no access gating).
 - **Size:** ~21,702 papers total; ~19 MB.
-- **Provided splits:** ~18,677 train, ~3,025 validation. **There is no dedicated test split.**
+- **Provided splits:** 18,677 train, 3,025 labelled `validation` on HuggingFace. **That second split is in fact the published benchmark TEST split of Alkan et al. (2026)** — the numbers match exactly, and their construction rule is quoted in §6.1. We therefore treat it as the test set and never train or tune on it.
 - **Fields per example:**
   - `title` — paper title (text)
   - `abstract` — paper abstract (text; may contain HTML-like tags such as `<SUB>` that need cleaning)
   - `verified_uat_labels` — list of topic keyword strings, e.g. `["solar wind", "exosphere", "the moon"]`
   - `verified_uat_ids` — the same labels as integer IDs (the dataset authors recommend working with IDs, since text labels can have synonyms)
-- **Label space:** the Unified Astronomy Thesaurus (UAT), ~2,300 possible concepts.
+- **Label space:** the Unified Astronomy Thesaurus (UAT) defines ~2,367 concepts, of which **1,864 actually occur** in this corpus. Both numbers are correct and should be stated together to avoid an apparent contradiction; the label space we model is the 1,864 that occur.
+- **Total label assignments:** 93,547 (paper, label) pairs across 21,702 papers — a mean of 4.31 labels per paper. Note that a count of "occurrences" is a count of pairs, not of papers.
 - **Labels per paper:** variable — roughly 1 to 12 in observed examples (this is what makes it multi-label).
 
 ---
@@ -66,50 +73,56 @@ Long-tail multi-label classification and parameter-efficient fine-tuning are wel
 These must be fixed once and shared across all models so the comparison is valid.
 
 ### 6.1 Train / validation / test split
-- The dataset provides train + validation only; there is no dedicated test split.
-- The provided validation split contains 805 of the 1,864 labels; the remaining 1,059 labels do not appear in it.
-- The provided validation split is not a random sample: exactly one label has 3 instances in it, no label has 1, 2 or 4, and 187 labels have exactly 5.
-- **We merge the provided train + validation splits and re-split 70/10/20 using iterative stratification** (`MultilabelStratifiedShuffleSplit`, `random_state=42`).
 
-### 6.2 Minimum-frequency label filter (k)
+**Decision: adopt the shipped split verbatim — 18,677 train / 3,025 test. Do not merge and re-split.**
 
-- We keep only labels that appear at least **k** times in the **training split**, and drop labels below that. This is standard "minimum-support" practice in extreme multi-label classification.
-- **k is not yet committed to a number.** It should be chosen from the data. Candidate methods:
-  1. **Fixed absolute cutoff** (e.g. k = 5, 10, or 20) — simplest, easy to justify. **This includes k = 1, i.e. no filter at all.**
-     *Check to run:* for each candidate k, report how many labels are retained and how many training documents are left with no labels and therefore dropped.
-  2. **Evaluation-reliability cutoff** — set k so every kept label has enough *validation-set* instances (e.g. ≥ 2–3) to compute a meaningful F1. **The check runs on the carved validation split, never on the test split**; test-set label support may be *reported* as a dataset statistic, but never *selected* on.
-     *Check to run:* for each candidate k, report the validation-split support of every retained label (minimum, and how many fall below the required threshold).
-  3. **Frequency-curve "elbow"** — plot sorted label frequencies, cut where the curve flattens into the sparse tail.
-     *Check to run:* plot the sorted label-frequency curve and inspect whether a clear elbow exists at all.
-  4. **Coverage-based** — keep labels covering ~95% of all label occurrences.
-     *Check to run:* for each candidate k, report the share of training label-occurrences retained.
-  5. **Sensitivity analysis** — train at several k values (e.g. 5, 10, 20) using only the cheap TF-IDF + Logistic Regression baseline (§7.1), so the sweep costs almost nothing, then compare the results and decide which k to adopt for all models.
-     *Check to run:* confirm whether the per-band conclusions are stable across candidate k values, or whether they depend on the threshold.
-  6. **Follow prior work** — see how the papers we cite handled the same threshold problem: whether they applied a minimum-support filter, at what value, and on what justification. Adopting or adapting an established rule is easier to defend in the report than inventing one.
-     *Check to run (not done yet):* read each of the following and record whether it filters its data, on what criterion, and how it justifies it —
-     - Huang et al., EMNLP 2021 (`Articles/`)
-     - Chang et al., KDD 2020 (`Articles/`)
-     - SciBERT — Beltagy, Lo & Cohan, EMNLP 2019 (`Articles/`)
-     - LoRA — Hu et al., ICLR 2022 (`Articles/`)
-     - QLoRA — Dettmers et al., NeurIPS 2023 (`Articles/`)
-     - the `adsabs/SciX_UAT_keywords` dataset card / SciX documentation
-     - the near-miss papers referred to in §11 (not yet named there — identify them first)
+The shipped `validation` split is the published benchmark test split of Alkan et al. (2026), built with this rule, quoted from their §3:
 
-- **Suggested approach (to be confirmed, not decided):** combine (2) and (3) — use the frequency plot to see the shape, set k by evaluation-reliability *on the validation split*, and add a sensitivity check.
-- Whatever k is chosen, record for the limitations section how many label *types* it removes, so the report is explicit that the study measures the tail it retains, not the full UAT tail.
-- IMPORTANT: the minimum-frequency filter (removing ultra-rare labels) is a SEPARATE decision from the frequency-band grouping below. Do not conflate them.
+> *"Labels appearing >=15 times are stratified to achieve approximately 85/15 distribution per label, while labels with <15 occurrences are placed entirely in the training set to maximize training signal."*
+
+Verified against the data: 935 concepts occur fewer than 15 times, and **exactly zero** of them appear in the shipped `validation` split. This also explains the apparent non-randomness we had noted (minimum support 3, a spike of 187 labels at exactly 5) — it is the <15 rule, not an anomaly.
+
+**Why we do not re-split:**
+- Re-splitting destroys the only route to comparing our numbers against published ones on identical data.
+- It would take ~1,447 (paper, label) pairs away from the rarest concepts — the ones least able to spare them — and buy almost nothing: ~392 of the 935 rare concepts would still have no test instance, and ~433 more would have only one or two, where per-label F1 is a step function rather than a measurement.
+- It removes an entire class of leakage bug: with the split given, there is no ordering to get wrong.
+
+**Validation set.** The shipped split has only two parts, so we **carve ~15% of the training papers as a validation set** (~2,802 validation / ~15,875 train), used for tuning the decision threshold and any hyperparameters. Measured: this gives at least one validation instance for 97.2% of the 359 test-scoreable tail concepts, and ~1,407 tail positives to tune on. **We never tune on the 3,025 test papers.**
+
+**Terminology warning.** HuggingFace labels the shipped 3,025-paper split `validation`, but we treat it as *test*. Everywhere else in this document, "validation" means the set carved from train.
+
+### 6.2 Minimum-frequency label filter (k) — NOT USED
+
+**Decision: no minimum-frequency filter. k is deleted, not chosen.** The label space is the 1,864 concepts that occur in the corpus.
+
+Rationale: the shipped split already performs the minimum-support function upstream, by holding every concept with fewer than 15 occurrences entirely in training. Adding our own filter on top would remove concepts from a study whose subject is rare concepts, while duplicating a decision the corpus authors already made. Inheriting the label universe by citation is also easier to defend than inventing a threshold.
+
+This supersedes the earlier plan to select k from the data; the six candidate selection methods previously listed here are no longer applicable.
 
 ### 6.3 Frequency bands for evaluation (head / medium / tail)
-- After filtering, we group the retained labels into three bands by frequency for per-band evaluation.
-- **Method: tertiles** — sort labels by frequency and split into three equal-sized groups (this follows Huang et al., EMNLP 2021, who split labels into equal-sized head/medium/tail groups; the exact instance-count boundaries then fall out of the data per-dataset).
-- Rationale for three bands (not 2 or 4+): three is the smallest number that shows a *trend with a middle* (head → medium → tail) while keeping enough labels/test-data per band for stable metrics. More bands = finer detail but noisier per-band estimates; fewer = stabler but coarser.
-- Optional enhancement: also plot performance as a continuous curve (F1 vs. label frequency) alongside the three-band table, if the dataset is large enough per band.
+**Decision: absolute frequency cutoffs, matching Alkan et al. (2026) — NOT tertiles.**
+
+| Band | Cutoff (total corpus occurrences) | Concepts | Assignments |
+|---|---|---|---|
+| Head | > 500 | 17 (0.9%) | 12,288 (13.1%) |
+| Torso | 50-500 | 429 (23.0%) | 62,808 (67.1%) |
+| Tail | < 50 | 1,418 (76.1%) | 18,451 (19.7%) |
+
+**Why tertiles must not be used here.** Sorting concepts by frequency and cutting into three equal groups (Huang et al., EMNLP 2021) puts the bottom third at train-frequencies **1 to 6**. But the lowest train-frequency of any concept appearing in the test split is **13**. Every concept in a tertile-tail would therefore be absent from the test set by construction, and the band would contain **zero test instances** — producing a tail column of 0.000 for every model that would look like a dramatic finding but is an empty set. Huang et al. could use tertiles because their concepts averaged ~150 examples; ours average 50.2 and our bottom third averages 2.85. The method does not transfer.
+
+Using the published cutoffs also keeps our per-band numbers directly comparable to theirs.
+
+**Band assignment basis.** Bands are assigned once, from training-split frequencies, and never recomputed. We additionally report the corpus-level assignment used by Alkan et al. for comparability. Note that because the bands are cut on corpus frequency while models train on train frequency, the two overlap slightly at the edges (torso concepts reach down to 39 training examples, tail concepts up to 44) — worth one sentence in the limitations.
+
+**Scoreability.** Of the 1,418 tail concepts, only **359** have at least one test instance; **1,059 (74.7%)** cannot be scored at all. This is a property of the corpus, not of our models, and it must be reported (see §8).
 
 ---
 
 ## 7. Models to compare
 
-All models are trained and evaluated under an **identical protocol** (same data, same splits, same k, same bands, same evaluation harness) so differences are attributable to the model, not to setup.
+All models are trained and evaluated under an **identical protocol** (same data, same splits, same bands, same decision-threshold procedure, same evaluation harness) so differences are attributable to the model, not to setup.
+
+**Honest scope of "identical."** The four scoring arms emit a probability per label; the generative arm does not. Data, splits, bands and metric computation are identical across all arms, but the decision rule necessarily differs for the generative arm unless it is given comparable scores (see §7.4). That difference is reported, not hidden.
 
 ### 7.1 Baselines (to make results meaningful — the "compared to what?")
 - **Majority / frequency baseline:** ignore the text; always predict the most common labels. Sets the floor.
@@ -117,7 +130,7 @@ All models are trained and evaluated under an **identical protocol** (same data,
 
 ### 7.2 Model arm A — SciBERT, full fine-tuning
 - Base model: `allenai/scibert_scivocab_uncased` (~110M parameters; BERT-base pretrained on scientific text).
-- Add a **multi-label classification head**: one output score per retained label, using **sigmoid activation + binary cross-entropy (BCE) loss** (multi-label, so labels are independent — NOT softmax).
+- Add a **multi-label classification head**: one output score per label in the 1,864-concept label space, using **sigmoid activation + binary cross-entropy (BCE) loss** (multi-label, so labels are independent — NOT softmax).
 - Fine-tune **all** weights.
 
 ### 7.3 Model arm B — SciBERT, LoRA
@@ -128,19 +141,35 @@ All models are trained and evaluated under an **identical protocol** (same data,
 ### 7.4 Model arm C — Gemma, QLoRA (the ambitious arm)
 - Base model: a small **Gemma** (start with 1B, scale to 4B if resources allow). Gemma is a **decoder-only generative** model.
 - **Load in 4-bit quantization** (via `bitsandbytes`) and fine-tune with **LoRA adapters** (via `peft`) — together this is **QLoRA**.
-- This model is **generative**: it produces the labels as **text output**, which must then be **parsed** back into a clean multi-label prediction (e.g. matching generated strings/IDs to the label set). This parsing step is unique to this arm and needs care.
-- Note on Gemma version: Gemma 3 (4B or 1B) is the recommended workhorse for stability/tooling maturity; Gemma 4 exists (released 2026) but is newer with thinner tooling.
+- This model is **generative**: it produces labels as **text output**, which must be mapped back to the label set. This is the hardest engineering in the project and is specified below rather than left as "needs care."
+
+**Scoring, so the comparison stays fair.** Free-form generation yields a *set* of labels with no per-label score, so the tuned decision threshold used by every other arm cannot be applied to it — the operating point would be an artefact of decoding settings. To avoid that, we obtain comparable scores: for each test paper, take a **shortlist of ~100 candidate concepts** from the TF-IDF baseline and have Gemma score each by **length-normalised teacher-forced log-probability**, reusing one cached prefill per paper. This yields a continuous, thresholdable score, keeps the comparison symmetric (the same shortlist is applied to every arm), and reduces the work from 1,864 x 3,025 = 5.6M scorings to ~302,500. The shortlist's recall@100 is reported as a shared ceiling. Scoring every label without a shared prefix cache is not feasible on our hardware.
+
+**Format failures are a reported result, not a confound.** Separately, run unconstrained generation on ~200 papers and report: out-of-vocabulary rate, normalisation-recoverable near-misses vs true hallucinations, duplicate rate, and mean predicted cardinality. This is the behaviour no prior work on this corpus has measured, because no prior work fine-tuned a generative model on it. We do **not** constrain decoding to the vocabulary: doing so would delete this finding while leaving the threshold asymmetry untouched.
+
+**Sequence length.** Measured token lengths for title + abstract: p50 ~400, p95 ~500, p99 ~550, max ~780. Use **max_len = 640**; the common default of 512 truncates 3-11% of papers.
+
+**Model size is decided by measurement, not in advance.** Run a timed benchmark first (§9). If a projected epoch is <=4h and loss stays finite, train Gemma-3-4B. Otherwise train **Gemma-3-1B** and use the 4B model prompted-only — which is the direct analogue of the preprint's prompted arm, and makes the contrast *tuned-small vs prompted-large*, a defensible question in its own right.
+- Note on Gemma version: Gemma 3 (1B or 4B) is the workhorse. A "Gemma 4" is referenced in 2026 secondary sources but we have not confirmed it against official documentation — check `ai.google.dev` before considering it.
 
 ---
 
 ## 8. Evaluation methodology (do not omit any part)
 
-- **Metrics:** precision, recall, and F1, computed **per frequency band** (head / medium / tail) as well as overall (report macro-averaged F1 across labels, since micro would be dominated by common labels).
+- **Decision threshold (tau) — the largest single factor, and previously missing from this spec.** Every scoring model outputs a probability per label; the cutoff for calling it a positive is a free parameter. Measured on our own baseline, moving it off the default 0.5 changes tail macro-F1 by **24.6x** (0.0139 -> 0.3420) — larger than any modelling choice in this project. **Tune one global tau per model arm on the carved validation split, and apply it identically to every arm.** A single shared tau costs only 1.06-1.23x against per-band tuning, and per-band tuning risks fitting noise given thin tail validation support. Tune the tail-band tau only over concepts that are test-scoreable, so the tuning population matches the evaluation population. Without this, any SciBERT-vs-Gemma difference may only reflect which model happened to suit the default.
+- **Metrics:** precision, recall and F1 **per frequency band**. Report per-band **micro-F1** as the headline (it pools counts across the band and is not distorted by concepts with one or two test instances), with macro-F1 alongside. **Every macro-average must state its denominator** and be reported under both: over all concepts in the band, and over only the test-scoreable ones. The two differ by 3.95x in the tail, and the published reference numbers do not say which they use.
+- **Store per-label TP/FP/FN** for every arm, so any averaging convention can be recomputed later without retraining.
 - **The core output:** a table (and/or plot) showing, for every model (2 baselines + SciBERT-full + SciBERT-LoRA + Gemma-QLoRA), the per-band precision/recall/F1. This is where the long-tail behavior and the model comparison become visible.
-- **Compute cost reporting:** for each model, record trainable parameters and GPU-hours (and peak memory). This makes the small-vs-large / cheap-vs-expensive trade-off explicit — central to the research question.
+- **Compute cost reporting:** for each model record **trainable parameters, peak GPU memory (`torch.cuda.max_memory_allocated`), and seconds per training step measured on the same device at the same batch size and sequence length**. Do *not* headline wall-clock GPU-hours: on a preemptible queue that figure absorbs waiting time, and an hour on one card is not an hour on another. Log these from the first run — a cost figure reconstructed after seeing the accuracy is a narrative, not a measurement. Note that trainable-parameter count alone flatters the QLoRA arm (it trains ~10-30M parameters against SciBERT's ~110M while still back-propagating through 4B frozen weights), so it must never be reported alone.
+- **What counts as a difference.** Measured on this test set, the bootstrap 95% interval on tail micro-F1 has a half-width of ~1.66pp, so the smallest difference we can resolve is roughly **2-3pp unpaired, ~1.5pp paired**. Differences below that are not results. We do not pre-register a success threshold; we report the difference with its interval and describe it. Whether the extra compute is "justified" is a judgement for the reader (and the marker), not something this data can settle — it should be asked, not assumed.
 - **Sanity check (fallback):** if a model can't get meaningful results, confirm it can **overfit a small subset** of the data. This proves the pipeline is bug-free rather than mis-designed. (This mirrors the course's own methodology requirement.)
-- **Control for randomness:** use fixed seeds; where feasible run multiple seeds and report variation. Account for any decoding randomness in the generative (Gemma) arm.
-- **Avoid data leakage:** strict train/val/test separation; the label filter and band definitions are computed from training data only, then applied to val/test.
+- **Control for randomness — three separate sources, not one.**
+  - *Split variance:* removed by fixing the split, but every claim is conditional on this split and the paper says so once.
+  - *Test-set sampling:* reported via **paired bootstrap over the 3,025 test papers** (Dror et al., ACL 2018), comparing arms on the same papers. Cheap, no retraining.
+  - *Training seed:* **not captured by the bootstrap**, which conditions on one trained model. Train SciBERT-LoRA at **3 seeds** and report the spread as a descriptive sentence. Do not wire it into any threshold: a range over 2-3 runs is itself high-variance. Not affordable for the Gemma arm at 4B. Note that the TF-IDF baseline is deterministic (`liblinear`, convex objective), so running it at several seeds would show exactly zero variation and prove nothing.
+  - *Decoding:* zeroed by greedy decoding (`do_sample=False, num_beams=1`) — state it.
+  - No published source endorses bootstrap intervals as a substitute for multiple training seeds; we present it as a compute-constrained choice, not a citation-backed equivalence.
+- **Avoid data leakage:** strict train/validation/test separation. Band definitions and the decision threshold are computed on training and carved-validation data only, never on the test split. Persist the split, the label set, the fitted binarizer and the band map once, with hashes, and have every arm read those files rather than recomputing them.
 - **Reproducibility:** log exact settings (model versions, hyperparameters, seeds); keep code in the shared repo.
 
 ---
@@ -148,16 +177,22 @@ All models are trained and evaluated under an **identical protocol** (same data,
 ## 9. Technical stack and resources
 
 - **Libraries:** HuggingFace `transformers` and `datasets`; `peft` (LoRA); `bitsandbytes` (4-bit quantization); `scikit-learn` (TF-IDF + Logistic Regression baseline); standard `torch`.
-- **Compute:** all models are small (SciBERT ~110M; Gemma 4B in 4-bit ~3 GB). Free Google Colab (T4 GPU, ~16 GB) suffices; the TAU Slurm `studentkillable` partition is available for the Gemma arm and repeated runs.
-- **Storage:** minimal; avoid frequent checkpointing (do not save a new checkpoint every few hundred steps — it fills shared storage). Back up code + critical results on GitHub/Drive (Slurm storage is not backed up).
-- **No external API credits or special hardware required.**
+- **`requirements.txt` is currently missing `torch`, `transformers`, `peft` and `bitsandbytes`.** Pin them before any model work.
+- **Our laptops cannot train the Gemma arm.** `bitsandbytes`, which performs the 4-bit quantization, is built for NVIDIA GPUs only and does not install on Apple Silicon. This is a compatibility wall, not a speed problem. Laptops remain fine for the TF-IDF baseline, the split, and the evaluation harness.
+- **Two free GPU options, both interruptible.** Google Colab (T4, ~16 GB) cuts off after 12 hours and sooner when idle; the TAU Slurm `studentkillable` partition can preempt a job at any moment but has persistent storage at `/home/morg/NLP2526b/<username>`. Access is **unproven** until someone submits the Slurm request form (a stated "before you start" prerequisite), accepts the gated Gemma licence on HuggingFace, and runs a job that allocates a GPU.
+- **Memory: the 4-bit weight size is not the binding constraint.** For Gemma-3 at batch 1, seq 640, the logits + cross-entropy tensor over the 262,144-token vocabulary is ~**1.68 GB** — and being vocabulary-driven it is *identical* for the 1B and 4B models, so shrinking the model does not shrink it. Mitigate with batch 1 plus gradient accumulation, chunked cross-entropy, gradient checkpointing, and loss on completion tokens only. Assert `attn_implementation="sdpa"`.
+- **T4-specific hazard.** The T4 is Turing (sm_75): no bfloat16, no FlashAttention-2. Gemma is repeatedly reported to overflow fp16 on this generation and produce NaN losses. Assert loss finiteness over **>=500 steps** — 20 steps is enough to settle peak memory but not to catch this. A bf16-capable card (L4/A100) avoids it; the course guidelines invite a request for one.
+- **Checkpointing is required, not optional.** A Gemma epoch is estimated at 3-14 hours against a 12-hour cap and a preemptible queue, and no checkpoint or resume code currently exists. Save every few hundred steps and on SIGTERM, and test resume by deliberately killing a job. (The earlier advice here to avoid frequent checkpointing was about not filling shared storage — keep few checkpoints, but keep them.)
+- **Storage:** back up code and critical results to GitHub/Drive; Slurm storage is not backed up and disappears at the submission date.
+- **No external API credits required.** Better GPUs are worth requesting but must not be assumed: plan for the T4 and treat an upgrade as a bonus.
 
 ---
 
 ## 10. Scope, constraints, and Plan B
 
-- **Scope:** this is a course project — a white-paper proof-of-concept, completable in a few days of focused work, NOT a conference paper. Avoid heavy engineering, large-scale human annotation, or huge compute.
-- **Plan B:** the SciBERT-vs-Gemma comparison is the core contribution, so if the full Gemma + QLoRA arm proves too costly in time, **scale it down rather than drop it** — a smaller Gemma (1B instead of 4B) or fewer runs — keeping the comparison intact but cheaper.
+- **Scope:** this is a course project — a white-paper proof-of-concept, NOT a conference paper. Avoid heavy engineering, large-scale annotation, or large compute. (The earlier phrasing "completable in a few days of focused work" is dropped: it is the course's description of an *idea's* scope, and reading it as an estimate of our remaining workload would be misleading.)
+- **Plan B — a ladder, in order:** Gemma-3-4B QLoRA -> 4B with gradient checkpointing -> **Gemma-3-1B trained plus 4B prompted-only** -> 1B only. Note that scaling 4B down to 1B is not the main lever: cost is dominated by decode length and evaluation-set size more than parameter count.
+- **The floor.** The evaluation findings in §4 (tail scoreability, the 3.95x denominator, the 24.6x threshold effect) require **no GPU** and are already measured. Structure the report so that a failed Gemma arm still leaves a complete paper, with the arm reported honestly as attempted, including its wall-clock and the error that stopped it. The course explicitly values negative results with sound methodology.
 
 ---
 
@@ -166,19 +201,48 @@ All models are trained and evaluated under an **identical protocol** (same data,
 **Anchor papers (directly used; from approved NLP/ML venues, post-2018):**
 1. **SciBERT** — Beltagy, Lo & Cohan, EMNLP 2019 (the base encoder).
 2. **LoRA** — Hu et al., ICLR 2022 (parameter-efficient fine-tuning).
-3. **QLoRA** — Dettmers et al., NeurIPS 2023 (4-bit quantized fine-tuning; used for the Gemma arm). *(Verify venue/year before final citation.)*
+3. **QLoRA** — Dettmers et al., NeurIPS 2023 (4-bit quantized fine-tuning; used for the Gemma arm). **Venue and year verified** — the earlier "verify before citing" note is closed.
+
+*(All three anchor venues verified against the ACL Anthology / official proceedings: SciBERT = EMNLP-IJCNLP 2019, D19-1371; LoRA = ICLR 2022; QLoRA = NeurIPS 2023. The `Articles/` notes are all the correct papers.)*
 
 **Related-work citations (context / prior art):**
 - **Huang et al., EMNLP 2021** — "Balancing Methods for Multi-label Text Classification with Long-Tailed Class Distribution." Balancing-loss methods; head/medium/tail evaluation (via tertiles); tested on Reuters (news) and PubMed (biomedical/MeSH). Verified from the actual paper.
 - **Chang et al., KDD 2020** — "Taming Pretrained Transformers for Extreme Multi-label Text Classification" (X-Transformer). Foundational transformer XMC; documents that the vast majority of labels are long-tail. Verified from the actual paper.
-- Additional near-miss papers exist (found via literature search) that each cover *some* of our four elements but not all four; these are leads to verify and cite in the final literature review, not confirmed here.
+- **Alkan, Grezes, Blanco-Cuaresma, Bartlett, Chivvis, Kelbert, Lockhart & Accomazzi, arXiv:2604.02156 (2026)** — *"AstroConcepts: A Large-Scale Multi-Label Classification Corpus for Astrophysics."* **Cite as a preprint, not a published paper** — arXiv metadata shows no journal reference, no DOI beyond the automatic arXiv one, and a single version posted 2 April 2026. This is the corpus we use and the source of our split, band cutoffs and reference baselines. Full text at `Articles/AstroConcepts - Alkan et al., arXiv 2026.md`. **Not citing it would read as a failed literature review**, since it is by the dataset's own authors and is findable by anyone searching the dataset name.
+- **Jain, Prabhu & Varma, KDD 2016** — propensity-scored precision (PSP@k), the established metric for tail-label evaluation in extreme multi-label classification. Relevant to our metric discussion in §8.
+- **Yang & Liu, SIGIR 1999** (after Joachims, 1998) — the ModApte split of Reuters-21578, which retained only categories with at least one training *and* one test document. This is the standard precedent for a minimum-support filter with a test-support guarantee, and the historical reason benchmark label sets arrive pre-curated.
+- **Dror, Baumer, Shlomov & Reichart, ACL 2018** — *"The Hitchhiker's Guide to Testing Statistical Significance in NLP."* Cited for the paired significance procedure in §8.
+- **Card, Henderson, Khandelwal, Jia, Mahowald & Jurafsky, EMNLP 2020** — *"With Little Power Comes Great Responsibility."* Cited for the power/minimum-detectable-effect framing in §8.
+- Two further partial near-misses to consider for related work: arXiv:2512.12677 (quantized LoRA on causal LLMs vs BERT) and arXiv:2406.08660 (fine-tuned small LLMs vs zero-shot generative models). Both cover some elements but neither combines PEFT with long-tail band evaluation.
 
 ---
 
-## 12. Notes / open items
+## 12. Decision log and open items
 
-- **k value: NOT YET CHOSEN** (see §6.2). To be determined from the data by the checks listed there. Any figures quoted for a specific k in earlier drafts were derived by counting on the merged corpus and must be recomputed on the training portion of the §6.1 re-split.
-- **Gemma version/size:** decide between Gemma 3 1B vs 4B based on resource/time budget (start small).
-- **Citations to verify** before the final report: QLoRA (Dettmers et al., NeurIPS 2023) venue/year, and any near-miss papers added to related work.
-- **AI Disclosure & Reflection section** is required in the FINAL report (not the proposal) — plan to write it.
-- **Final report format:** ACL template (LaTeX/Overleaf), up to 8 pages excluding references/appendix.
+**Decisions now closed — do not reopen without new evidence.**
+
+| Decision | Value | Basis |
+|---|---|---|
+| Split | Shipped 18,677 / 3,025, adopted verbatim | §6.1 — it is the published benchmark test split |
+| Validation | ~15% carved from train | §6.1 — the shipped split has only two parts |
+| Minimum-frequency filter `k` | **None** | §6.2 — the split filters upstream |
+| Frequency bands | Absolute: head >500, torso 50-500, tail <50 | §6.3 — tertiles give an empty tail band here |
+| Decision threshold | One global tau per arm, tuned on the carved validation set | §8 — worth up to 24.6x on the tail |
+| Headline metric | Per-band micro-F1, with macro-F1 under both denominators | §8 |
+| Gemma output | Free-form generation, plus shortlist log-probability scoring | §7.4 — constrained decoding is not used |
+| QLoRA anchor citation | Dettmers et al., NeurIPS 2023 | §11 — venue verified |
+
+**Open items, with owners.**
+
+| Item | Owner | Notes |
+|---|---|---|
+| Submit the Slurm request form | __________ | Stated "before you start" prerequisite; days of lead time |
+| Accept the Gemma licence on HuggingFace, generate a token | __________ | Gated model; code fails at load without it |
+| Timed 200-step Gemma benchmark on the real GPU | __________ | Decides 4B vs 1B (§7.4). Must assert loss finiteness over >=500 steps |
+| Email the lecturer | __________ | Disclose the concurrent preprint; get the metric change approved (macro-F1 was never in the approved proposal); request better GPUs |
+| Checkpoint / resume for training | __________ | Gates the Gemma arm against preemption; test by killing a job |
+| Re-run the threshold sweep with tau tuned on the carved validation set | __________ | Current 0.342 / 0.087 figures are tuned-on-eval and optimistic |
+| Re-check whether the AstroConcepts preprint is accepted anywhere | __________ | Before submission, so the citation is accurate |
+| AI Disclosure & Reflection section | __________ | Required in the final report; log as we go rather than reconstructing in late September |
+
+**Format:** ACL template (LaTeX/Overleaf), up to 8 pages excluding references and appendix. Budget roughly four tables and one figure; every table beyond that trades presentation marks for results marks.
