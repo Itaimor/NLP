@@ -1,3 +1,5 @@
 /.cursor
 .venv/
 .hf_cache/
+# Local analysis notes and working scripts (not shared)
+.council/
