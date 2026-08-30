@@ -216,8 +216,15 @@ All models are trained and evaluated under an **identical protocol** (same data,
   | NF4 `quantize_4bit` / `dequantize_4bit` on MPS | works; mean reconstruction error 0.073 |
   | SciBERT 110M, 1,864-label head, batch 8, seq 512 | **2.29 s/step -> ~76 min/epoch** over 15,875 docs |
   | QLoRA on a 0.5B decoder, batch 2, seq 640 | 3.69 s/step; loss finite and falling 16.4 -> 6.9 over 5 steps |
+  | QLoRA on a **1.5B** decoder, bf16 compute, batch 1, seq 640, grad-ckpt on | 5.28 s/step; loss 7.6 -> 3.3; **peak memory 10.2 GB of 16 GB**; ~23 h/epoch |
 
-  **So both SciBERT arms are comfortably laptop work**, and the QLoRA path genuinely runs. What the laptop is not good for is *large* models: the 0.5B measurement extrapolates to roughly **15-16 h/epoch for a 1B model and ~80 h/epoch for 4B**, because bitsandbytes' MPS `gemm_4bit` only uses its optimised kernel at batch 1 (inference) and falls back to dequantize-then-matmul for batched training. **Gemma-3-4B on a laptop is not viable; Gemma-3-1B is a slow but real fallback.**
+  Scaling is near-linear per document (1.85 s/doc at 0.5B, 5.28 s/doc at 1.5B — 2.9x for 3x the
+  parameters), so **Gemma-3-1B interpolates to ~15 h/epoch** on this hardware. bf16 compute is
+  confirmed working on MPS, which is what Gemma 3 needs.
+
+  **So both SciBERT arms are comfortably laptop work**, and the QLoRA path genuinely runs. What the laptop is not good for is *large* models: measured scaling puts **Gemma-3-1B at ~15 h/epoch and 4B at roughly 60-80 h/epoch**, because bitsandbytes' MPS `gemm_4bit` only uses its optimised kernel at batch 1 (inference) and falls back to dequantize-then-matmul for batched training. **Gemma-3-4B on a laptop is not viable; Gemma-3-1B is a slow but real fallback** — an overnight run per epoch.
+
+  **Two optimisations that should cut the 1B figure substantially, both untested:** (a) the timings above are language-model loss over a 150k+ vocabulary; our arms use a **1,864-label classification head**, which removes a large logits tensor and its gradient — plausibly 30-50% of step cost and most of the memory pressure; (b) seq 640 heavily over-pads abstracts averaging ~250 tokens, so **length-grouped dynamic padding at 320-384** could roughly halve it again. Measure both before concluding the laptop is too slow.
 
 - **Apple Silicon gotchas, all load-bearing:** pass `device_map={"": "mps"}` explicitly — with `device_map=None` the 4-bit quantizer silently places the model on **CPU**; 8-bit optimizers are unsupported on MPS, so use `adamw_torch`; set `TORCHDYNAMO_DISABLE=1` to avoid observed recompile thrash inside the dequantization path.
 - **Two free GPU options, both interruptible.** Google Colab (T4, ~16 GB) cuts off after 12 hours and sooner when idle; the TAU Slurm `studentkillable` partition can preempt a job at any moment but has persistent storage at `/home/morg/NLP2526b/<username>`. Access is **unproven** until someone submits the Slurm request form (a stated "before you start" prerequisite), accepts the gated Gemma licence on HuggingFace, and runs a job that allocates a GPU.
