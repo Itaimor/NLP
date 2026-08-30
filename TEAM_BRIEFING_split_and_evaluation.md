@@ -561,22 +561,38 @@ Because it is an unrefereed preprint from April rather than a published paper, t
 
 This is the item most likely to sink the project, so here is the problem in full.
 
-**We cannot train Gemma on our own laptops.** Training a model this size needs a specific kind of chip
-— an NVIDIA GPU. The technique we are using (QLoRA) shrinks Gemma to 4-bit so it fits in a small
-amount of memory, and the library that performs that shrinking, `bitsandbytes`, is written only for
-NVIDIA hardware. A MacBook has an Apple chip, so the library will not install and the code will not
-run. This is not a question of the laptop being slow — the tool does not exist for that machine. Our
-laptops remain fine for everything else: the TF-IDF baseline, the split, the evaluation harness, and
-every number in Parts 1-5 was produced on one.
+**Our laptops can train more than we assumed — this was tested, not guessed.** An earlier version of
+this briefing said `bitsandbytes` (the library that shrinks the model to 4-bit) was NVIDIA-only and
+would not install on a Mac. **That was wrong.** It has shipped Apple Silicon builds since December
+2025, and as of July 2026 all 4-bit configurations work on Apple's GPU. Measured on an M1 Air, 16 GB:
 
-**So we borrow a machine. There are two free options:**
+| What we tested | Result |
+|---|---|
+| 4-bit quantization on the Mac GPU | works |
+| **SciBERT** (our arms A and B), batch 8, seq 512 | 2.29 s/step -> **~76 min per epoch** |
+| **QLoRA** on a 0.5B model, batch 2, seq 640 | 3.69 s/step, loss falling 16.4 -> 6.9 |
+
+**So the SciBERT arms and both baselines are laptop work — no GPU needed, no waiting on anyone.**
+
+**Where the laptop does run out is size.** The 0.5B timing extrapolates to roughly **15-16 hours per
+epoch for a 1B model, and about 80 hours for a 4B one.** The reason is specific: on Apple hardware the
+4-bit maths only uses the fast path for single-item inference, and falls back to a slower route for
+batched training. So **Gemma-3-1B on the laptop is a slow but genuine fallback; Gemma-3-4B is not.**
+
+**One thing that surprised us, and it matters.** Gemma 3 produces corrupted (NaN) values when trained
+in the fp16 number format — this is a property of the model, not of any particular GPU. The fix is to
+use bf16 instead. Our Macs support bf16; **Colab's T4 does not**, so on Colab we would have to use
+fp32, which is slower but numerically safe. The T4 is still faster than the laptop even so — its real
+drawback is the 12-hour cutoff, not the number format.
+
+**So we borrow a machine for the Gemma arm, and there are two free options:**
 
 | | Google Colab | TAU Slurm cluster |
 |---|---|---|
 | Setup | none, works in a browser today | request form, then SSH and job scripts |
 | Interruption | cuts off after 12 hours, sooner if idle | can kill your job **at any moment** — the partition is named `studentkillable` |
 | Storage | disappears when the session ends | persistent, at `/home/morg/NLP2526b/<username>` |
-| Best for | development and short test runs | the long training runs |
+| Number formats | no bf16 (must use fp32 for Gemma 3) | depends on the card — worth checking |
 
 **And here is the actual danger.** One training run of Gemma takes somewhere between **3 and 14 hours**.
 Both options above interrupt you before or during that. Our code currently saves nothing while it
