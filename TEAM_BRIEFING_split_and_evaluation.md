@@ -585,14 +585,37 @@ use bf16 instead. Our Macs support bf16; **Colab's T4 does not**, so on Colab we
 fp32, which is slower but numerically safe. The T4 is still faster than the laptop even so — its real
 drawback is the 12-hour cutoff, not the number format.
 
-**So we borrow a machine for the Gemma arm, and there are two free options:**
+**We have a dedicated NVIDIA GPU, and it changes the picture: an RTX 3060 Ti (8 GB).** It has both
+bf16 and FlashAttention-2, which Colab's T4 does not, and it is about twice the T4's speed with no
+queue and no time limit. Gemma-3-4B should fit in its 8 GB *if* we use a classification head rather
+than generating text (~4.5 GB vs ~6.5-7.5 GB) — not yet measured on the card.
 
-| | Google Colab | TAU Slurm cluster |
-|---|---|---|
-| Setup | none, works in a browser today | request form, then SSH and job scripts |
-| Interruption | cuts off after 12 hours, sooner if idle | can kill your job **at any moment** — the partition is named `studentkillable` |
-| Storage | disappears when the session ends | persistent, at `/home/morg/NLP2526b/<username>` |
-| Number formats | no bf16 (must use fp32 for Gemma 3) | depends on the card — worth checking |
+| | RTX 3060 Ti (ours) | Google Colab | TAU Slurm cluster |
+|---|---|---|---|
+| Setup | already ours | none | request form, SSH, job scripts |
+| Interruption | none | 12-hour cutoff | preemptible at any moment |
+| Memory | 8 GB dedicated | 16 GB | varies by card |
+| bf16 (Gemma 3 needs it) | **yes** | **no** — must use fp32 | probably |
+| Who can use it | **one of us** | anyone | **each of us, own account** |
+
+**So why still bother with Slurm?** Not for raw speed — the 3060 Ti is enough for the models we need.
+Three other reasons:
+
+1. **Our approved proposal commits to it.** It says: *"We will also use the TAU Slurm studentkillable
+   partition for the Gemma arm and repeated runs."* Dropping it silently is a deviation from a plan
+   the lecturer approved.
+2. **The desktop belongs to one of us.** Slurm gives each of the three of us an account and storage.
+   A plan built only on one person's machines leaves the other two with nothing to run, and means a
+   single broken computer stops the whole project.
+3. **Multiple seeds run in parallel on a cluster and one-at-a-time on a single card.**
+
+Filing the form takes about fifteen minutes and does not oblige us to use it. It is insurance, and it
+is the only item on our list with a multi-day lead time.
+
+**One measurement constraint worth knowing.** Our research question asks whether Gemma's extra compute
+is justified, and we promised to report GPU-hours. **Hours on different machines are not comparable** —
+an M1 hour is not a 3060 Ti hour. So every arm whose compute cost we report has to be timed on the
+same machine, at the same batch size and sequence length. The 3060 Ti is the obvious candidate.
 
 **And here is the actual danger.** One training run of Gemma takes somewhere between **3 and 14 hours**.
 Both options above interrupt you before or during that. Our code currently saves nothing while it

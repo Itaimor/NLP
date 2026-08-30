@@ -1,8 +1,20 @@
+# Core data / EDA
 datasets>=3.0.0
-
-# For EDA_DataSplit.py:
 pandas
 matplotlib
-datasets
 scikit-learn
 iterative-stratification
+scipy
+
+# Model training. Versions below are what we have verified working on
+# Apple Silicon (M1, macOS 26, MPS backend) as of 2026-08-30.
+torch>=2.13.0
+transformers>=5.16.1
+peft>=0.20.0
+accelerate>=1.14.0
+
+# 4-bit quantization for the Gemma QLoRA arm.
+# NOTE: bitsandbytes supports Apple Silicon from 0.49.0 (macOS arm64 wheels);
+# 0.50.0+ states all 4-bit configurations work on the MPS backend. It also
+# ships Windows x86-64 wheels targeting sm_86, which covers the RTX 3060 Ti.
+bitsandbytes>=0.50.2
