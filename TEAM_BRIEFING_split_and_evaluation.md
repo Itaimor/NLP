@@ -585,27 +585,28 @@ use bf16 instead. Our Macs support bf16; **Colab's T4 does not**, so on Colab we
 fp32, which is slower but numerically safe. The T4 is still faster than the laptop even so — its real
 drawback is the 12-hour cutoff, not the number format.
 
-**Between us we have enough hardware to do the whole project.** What the team owns:
+**Between us we have enough hardware to do the whole project.** What is available, and what each
+machine can technically do:
 
-| Machine | Owner | Good for | Status |
-|---|---|---|---|
-| MacBook Air **M1**, 16 GB | Ilana | SciBERT (**76 min/epoch**), baselines, development | **measured** |
-| Desktop, **RTX 3060 Ti** 8 GB | Ilana | **the Gemma arm** — the only machine that is not a daily driver | specs verified, not measured |
-| MacBook Air **M5**, 24 GB | Itai | SciBERT, replication, backup; its 24 GB fits models the M1 cannot | not measured |
-| ? | Shai | — | **nobody has asked** |
+| Machine | Memory | Measured / known capability |
+|---|---|---|
+| MacBook Air **M1** (2021) | 16 GB unified | **measured**: SciBERT ~76 min/epoch; QLoRA on a 1.5B model ~23 h/epoch at 10.2 GB peak. Gemma-3-1B ~15 h/epoch; 4B infeasible. |
+| Desktop, **RTX 3060 Ti** | 8 GB VRAM | not yet measured. Has bf16 + FlashAttention-2; ~2x a Colab T4; no queue or time limit. Gemma-3-4B ~4.5 GB with a classification head, ~6.5-7.5 GB generating text against ~7.3 GB usable. |
+| MacBook Air **M5** | 24 GB unified | not yet measured. 153 GB/s (~2.2x the M1) and dedicated matrix hardware; 24 GB fits models the M1 cannot. |
 
-**The 3060 Ti is the workhorse for Gemma.** It has bf16 and FlashAttention-2, which Colab's T4 lacks,
-so it avoids Gemma 3's fp16 NaN problem natively, and it is roughly twice the T4's speed with no queue
-and no time limit. Its 8 GB is the constraint: Gemma-3-4B fits in ~4.5 GB with a classification head,
-but ~6.5-7.5 GB generating text — the latter is uncomfortably close to the ~7.3 GB usable ceiling.
+**The 3060 Ti is the strongest machine for the Gemma arm.** It has bf16 and FlashAttention-2, which
+Colab's T4 lacks, so it avoids Gemma 3's fp16 NaN problem natively, with no queue and no time limit.
+Its 8 GB is the binding constraint, and the 4B generative configuration is close enough to the ceiling
+that it needs measuring before anyone relies on it.
 
-**About Itai's M5 — promising, but do not build the plan on it yet.** Apple confirmed it has dedicated
-matrix-multiplication hardware ("Neural Accelerators", one per GPU core, claimed up to 9.5x the M1 for
-AI work). Two caveats: Apple exposes them through Metal/MLX and makes **no claim of PyTorch support**,
-and no PyTorch release note mentions them — so our stack may capture little of that speedup. There is
-also an open PyTorch bug where MPS reports itself unavailable on macOS 26.x. It should clearly beat the
-M1 on SciBERT, and its **24 GB is a genuine advantage**, but treat any speed claim as unproven until
-someone runs the smoke test on it.
+**The M5 is promising but unproven.** Apple confirmed dedicated matrix-multiplication hardware
+("Neural Accelerators", one per GPU core, claimed up to 9.5x the M1 for AI work). Two caveats: Apple
+exposes them through Metal/MLX and makes **no claim of PyTorch support**, and no PyTorch release note
+mentions them — so our stack may capture little of that speedup. There is also an open PyTorch bug
+where MPS reports itself unavailable on macOS 26.x. It should beat the M1 on SciBERT, and its 24 GB is
+a real advantage, but treat any speed claim as unproven until someone runs the smoke test on it.
+
+*(Who runs what is for the team to decide — this section records only what each machine can do.)*
 
 **So why still bother with Slurm?** Not for raw speed — the 3060 Ti is enough for the models we need.
 Three other reasons:
