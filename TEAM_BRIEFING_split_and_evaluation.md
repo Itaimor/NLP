@@ -585,42 +585,79 @@ use bf16 instead. Our Macs support bf16; **Colab's T4 does not**, so on Colab we
 fp32, which is slower but numerically safe. The T4 is still faster than the laptop even so — its real
 drawback is the 12-hour cutoff, not the number format.
 
-**Between us we have enough hardware to do the whole project.** What is available, and what each
-machine can technically do:
+**Between us we have enough hardware to do the whole project.** What each machine can run:
 
-| Machine | Memory | Measured / known capability |
-|---|---|---|
-| MacBook Air **M1** (2021) | 16 GB unified | **measured**: SciBERT ~76 min/epoch; QLoRA on a 1.5B model ~23 h/epoch at 10.2 GB peak. Gemma-3-1B ~15 h/epoch; 4B infeasible. |
-| Desktop, **RTX 3060 Ti** | 8 GB VRAM | not yet measured. Has bf16 + FlashAttention-2; ~2x a Colab T4; no queue or time limit. Gemma-3-4B ~4.5 GB with a classification head, ~6.5-7.5 GB generating text against ~7.3 GB usable. |
-| MacBook Air **M5** | 24 GB unified | not yet measured. 153 GB/s (~2.2x the M1) and dedicated matrix hardware; 24 GB fits models the M1 cannot. |
+| Task | MacBook Air M1 16 GB | Desktop RTX 3060 Ti 8 GB *(dedicated — not a daily-use machine)* | MacBook Air M5 24 GB | Laptop, Intel i7 11th gen, 16 GB *(no NVIDIA GPU)* |
+|---|---|---|---|---|
+| **Majority baseline** | yes, minutes | yes | yes | yes, minutes |
+| **TF-IDF + logistic regression** | yes, ~30 min | yes | yes | yes, ~30 min |
+| **SciBERT** (full fine-tune or LoRA) | **yes — 1.3 h/epoch, measured** | yes, faster | yes, likely faster than M1 | **yes — ~3-6 h/epoch on CPU**, overnight |
+| **Gemma-3-1B QLoRA** | possible but slow, ~15 h/epoch | **yes — est. 2-3 h/epoch** | fits in 24 GB, speed unproven | not practical |
+| **Gemma-3-4B QLoRA** | **no** — will not fit in 16 GB | **yes** — est. 5-7 h/epoch with a classification head; tight if generating text | fits in 24 GB, speed unproven | **no** |
+| **Evaluation harness, analysis, writing** | yes | yes | yes | yes |
 
-**The 3060 Ti is the strongest machine for the Gemma arm.** It has bf16 and FlashAttention-2, which
-Colab's T4 lacks, so it avoids Gemma 3's fp16 NaN problem natively, with no queue and no time limit.
-Its 8 GB is the binding constraint, and the 4B generative configuration is close enough to the ceiling
-that it needs measuring before anyone relies on it.
+Measured on the M1: SciBERT 2.29 s/step (batch 8, seq 512); a 1.5B QLoRA model 5.28 s/step at 10.2 GB
+peak. On CPU the same SciBERT job ran at 3.4 s/step — only about 1.8x slower than the M1's GPU, which
+is why a machine without an NVIDIA card is still a perfectly good SciBERT trainer.
 
-**The M5 is promising but unproven.** Apple confirmed dedicated matrix-multiplication hardware
-("Neural Accelerators", one per GPU core, claimed up to 9.5x the M1 for AI work). Two caveats: Apple
-exposes them through Metal/MLX and makes **no claim of PyTorch support**, and no PyTorch release note
-mentions them — so our stack may capture little of that speedup. There is also an open PyTorch bug
-where MPS reports itself unavailable on macOS 26.x. It should beat the M1 on SciBERT, and its 24 GB is
-a real advantage, but treat any speed claim as unproven until someone runs the smoke test on it.
+**Two things worth knowing about the machines:**
 
-*(Who runs what is for the team to decide — this section records only what each machine can do.)*
+**The RTX 3060 Ti is the strongest option for the Gemma arm**, and not only because it is fastest. It is
+the one machine that is *not* somebody's daily-use computer, so a job can run for hours without anyone
+needing the screen back. It also has bf16 and FlashAttention-2, which Colab's T4 lacks, so it avoids
+Gemma 3's fp16 NaN problem natively. Its 8 GB is the binding constraint: Gemma-3-4B fits comfortably
+with a classification head but sits close to the ceiling if generating text — that needs measuring
+before anyone relies on it.
 
-**So why still bother with Slurm?** Not for raw speed — the 3060 Ti is enough for the models we need.
-Three other reasons:
+**The M5 is promising but unproven.** Apple confirmed it has dedicated matrix-multiplication hardware
+("Neural Accelerators", one per GPU core, claimed up to 9.5x the M1 for AI work), and 153 GB/s memory
+bandwidth against the M1's 68. But Apple exposes that hardware through Metal/MLX and makes **no claim
+of PyTorch support**; no PyTorch release note mentions it. There is also an open PyTorch bug where MPS
+reports itself unavailable on macOS 26.x. Its **24 GB is a certain advantage** — it fits models the M1
+cannot. Any speed claim is unproven until someone runs the smoke test.
 
-1. **Our approved proposal commits to it.** It says: *"We will also use the TAU Slurm studentkillable
-   partition for the Gemma arm and repeated runs."* Dropping it silently is a deviation from a plan
-   the lecturer approved.
-2. **The desktop belongs to one of us.** Slurm gives each of the three of us an account and storage.
-   A plan built only on one person's machines leaves the other two with nothing to run, and means a
-   single broken computer stops the whole project.
-3. **Multiple seeds run in parallel on a cluster and one-at-a-time on a single card.**
+*(Who runs what is for the team to decide — this table records only what each machine can do.)*
 
-Filing the form takes about fifteen minutes and does not oblige us to use it. It is insurance, and it
-is the only item on our list with a multi-day lead time.
+### What Slurm is, and whether we need it
+
+**Slurm is not software we install and it is not a form we need approval on.** It is the university's
+shared computer room — racks of servers with GPUs in them, in a TAU data centre, that every student in
+the course can use.
+
+**How you actually use it.** You never sit at those machines. From your own laptop you:
+
+1. write a short text file that says *"run this script, I need one GPU, for up to 8 hours"*
+2. send it with one command (`sbatch`)
+3. your request joins a queue
+4. when a GPU frees up, the cluster runs your script and writes the output to a file
+5. you read that file whenever you like
+
+The point is step 5: **you can close your laptop and go to sleep while it runs.** That is the whole
+appeal — the work does not live on your machine.
+
+**Why a queue exists at all.** Hundreds of students, far fewer GPUs. The queue shares them out. Our
+partition is called `studentkillable`, and the name is literal: **our job can be stopped mid-run** if
+someone with higher priority needs the card. That is the price of it being free, and it is why saving
+progress periodically matters — with checkpoints an interrupted job resumes, without them the hours
+are simply lost.
+
+**Do we need it? Honestly, no.** The table above shows our four machines cover every task, and the
+3060 Ti alone covers the Gemma arm. Slurm is not on the critical path.
+
+**Three reasons to register anyway.** The form takes about fifteen minutes, gives each of us our own
+account and storage, and commits us to nothing:
+
+1. **Insurance.** If the desktop breaks or is unavailable in the week before the freeze, the Gemma arm
+   has nowhere else fast to run. Getting a cluster account *at that point* would cost days we would not
+   have.
+2. **Everyone gets their own.** Accounts are per student, so all three of us can run things at once
+   instead of queueing behind one machine.
+3. **Our approved proposal already names it:** *"We will also use the TAU Slurm studentkillable
+   partition for the Gemma arm and repeated runs."* If we end up not using it, that is fine — but it
+   should be a decision we mention, not a silent gap.
+
+**What we should not do** is spend days learning the cluster right now. Register, then build the plan
+around our own machines.
 
 **One measurement constraint worth knowing.** Our research question asks whether Gemma's extra compute
 is justified, and we promised to report GPU-hours. **Hours on different machines are not comparable** —
