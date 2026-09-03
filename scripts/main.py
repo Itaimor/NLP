@@ -1,5 +1,10 @@
-# By Shai Habi, 29/08/2026
 # This file is the main project file, running the full experiment.
+
+# For loading dataset from hf_cache:
+import os
+from pathlib import Path
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+os.environ.setdefault("HF_HOME", str(PROJECT_ROOT / ".hf_cache"))
 
 # General libraries:
 import random
@@ -7,18 +12,20 @@ import numpy as np
 import torch
 import time
 
-# Imports from other files:
-from EDA_DataSplit import main_EDA_DataSplit
-
+from datasets import load_dataset, concatenate_datasets
+from EDA_Analysis import EDA_Analysis
 
 # Global variables:
 SAVE_PATH = ""
 
 
-## Subsection: General ##
+
+
+## General: fixes seed and data loading ##
+
 def set_seed(seed):
     """
-    Fixes random seeds for reproducibility.
+    Fixes given random seed value.
 
     Input:
     --- seed: int
@@ -32,48 +39,60 @@ def set_seed(seed):
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
 
+    return None
 
-## Subsection: Preprocessing ##
-def create_input_text_to_models(dataframe):
+
+def data_loading():
     """
-    Creates the same textual input for both models: SciBert and Gemma.
-    The exact format can be changed later, but both models must receive the same information.
+    Loads the original dataset splits and creates a combined dataframe as well.
 
-    Input:
-    --- dataframe : pandas.DataFrame
+    Assumption:
+    --- Data already exists in hf_cache (user already ran "download_data.py").
+    Input: None
     Output:
-    --- dataframe : pandas.DataFrame
+    --- d : dictionary of pandas dataframes
     """
 
-    dataframe = dataframe.copy()
-    titles = dataframe["title"].fillna("").astype(str)
-    abstracts = dataframe["abstract"].fillna("").astype(str)
-    dataframe["input_text"] = ("Title: " + titles + "\nAbstract: " + abstracts)
+    print("Loading data from hf_cache ... ", end="")
+    dataset = load_dataset("adsabs/SciX_UAT_keywords")
+    print("Done!")
 
-    return dataframe
+    # Extracts datasets:
+    train_df = dataset["train"].to_pandas()
+    validation_df = dataset["val"].to_pandas()
+
+    # Merges:
+    full_dataset = concatenate_datasets([dataset["train"], dataset["val"]])
+    full_df = full_dataset.to_pandas()
+
+    return {
+        "train": train_df,
+        "test": validation_df,
+        "full": full_df
+    }
 
 
 
-## Section: Main ##
-def main(chosen_k, chosen_seed):
+def main(chosen_seed):
     """
-    Runs the current project pipeline given our chosen k value.
+    Runs the complete project pipeline.
 
     Assumption:
     --- User has already run "download_data.py".
-    Inputs:
-    --- chosen_k, chosen_seed : int
+    Inputs: None
+    Output: None
     """
 
-    # Fixes the seed throughout the experiment:
     set_seed(chosen_seed)
 
-    # Runs main_EDA_DataSplit:
-    # This function loads the original dataset from HF, runs full EDA, removes and split according to k.
-    datasets = main_EDA_DataSplit(k_list=[chosen_k], chosen_seed=chosen_seed)
-    print(" ")
+    # Loads datasets and runs EDA analysis
+    datasets_dict = data_loading()
+    EDA_Analysis(datasets_dict)
 
-    # Preprocesses before sending to SciBert and Gemma:
+
+
+
+
 
 
 
@@ -86,4 +105,4 @@ def main(chosen_k, chosen_seed):
 
 
 if __name__ == "__main__":
-    main(chosen_k=14, chosen_seed=42)
+    main(chosen_seed=42)
