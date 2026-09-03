@@ -31,7 +31,7 @@ def get_label_stats(name, dataframe, labels_col="verified_uat_labels"):
         .reset_index(drop=True)
     )
 
-    print(f"{name} dataset has: {len(dataframe):,} papers; {len(label_stats):,} unique labels.")
+    print(f"--- {name} dataset has: {len(dataframe):,} papers; {len(label_stats):,} unique labels.")
     return label_stats
 
 
@@ -306,15 +306,12 @@ def EDA_Analysis(datasets_dict):
     """
 
     # Analyze each dataset:
-    print("\nAnalyzing original datasets by focusing on the labels:")
     for name, dataframe in datasets_dict.items():
-        print(f"===== {name} =====")
 
         # Calculate label statistics:
         label_stats = get_label_stats(name, dataframe)
+
         # Plot label analysis:
         plot_label_analysis(label_stats, dataset_name=name)
-        print(" ")
 
-    print("\nDone plotting the original splits datasets.\n")
     return None
