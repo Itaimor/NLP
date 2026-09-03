@@ -13,10 +13,16 @@ import torch
 import time
 
 from datasets import load_dataset, concatenate_datasets
+from sklearn.preprocessing import MultiLabelBinarizer
+from iterstrat.ml_stratifiers import MultilabelStratifiedShuffleSplit
+
+# Project's imports:
 from EDA_Analysis import EDA_Analysis
+
 
 # Global variables:
 SAVE_PATH = ""
+SEED = 42
 
 
 
@@ -39,6 +45,9 @@ def set_seed(seed):
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
 
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
     return None
 
 
@@ -53,13 +62,13 @@ def data_loading():
     --- d : dictionary of pandas dataframes
     """
 
-    print("Loading data from hf_cache ... ", end="")
+    print("\nLoading data from hf_cache ... ", end="")
     dataset = load_dataset("adsabs/SciX_UAT_keywords")
     print("Done!")
 
     # Extracts datasets:
     train_df = dataset["train"].to_pandas()
-    validation_df = dataset["val"].to_pandas()
+    original_validation_df = dataset["val"].to_pandas()
 
     # Merges:
     full_dataset = concatenate_datasets([dataset["train"], dataset["val"]])
@@ -67,42 +76,77 @@ def data_loading():
 
     return {
         "train": train_df,
-        "test": validation_df,
+        "validation": [],  # later it will be overridden, it's for inner order.
+        "test": original_validation_df,
         "full": full_df
     }
 
 
+def split_train_validation(train_df, seed, validation_size=0.15):
+    """
+    Splits the original training data into train and validation,
+    approximately preserving each label's frequency.
+
+    Inputs:
+    --- train_df : pandas dataframes
+    --- seed: int
+    --- validation_size : float
+    Outputs:
+    --- new_train_df, validation_df : pandas dataframes
+    """
+
+    print("Splits the original train set to train and validation ... ", end="")
+    # Temporary binary label matrix, used only for stratification:
+    mlb = MultiLabelBinarizer()
+    labels_matrix = mlb.fit_transform(train_df["verified_uat_ids"])
+
+    splitter = MultilabelStratifiedShuffleSplit(
+        n_splits=1,
+        test_size=validation_size,
+        random_state=seed
+    )
+
+    train_indices, validation_indices = next(
+        splitter.split(
+            np.zeros((len(train_df), 1)),
+            labels_matrix
+        )
+    )
+
+    new_train_df = train_df.iloc[train_indices].reset_index(drop=True)
+    validation_df = train_df.iloc[validation_indices].reset_index(drop=True)
+
+    print("Done!")
+    return new_train_df, validation_df
+
+
+
 
 def main(chosen_seed):
-    """
-    Runs the complete project pipeline.
+    """  Runs the complete project pipeline.  """
 
-    Assumption:
-    --- User has already run "download_data.py".
-    Inputs: None
-    Output: None
-    """
 
     set_seed(chosen_seed)
 
-    # Loads datasets and runs EDA analysis
+    # Loads and splits the training set to train and validation:
     datasets_dict = data_loading()
+    train_df, validation_df = split_train_validation(
+        train_df=datasets_dict["train"],
+        seed=chosen_seed
+    )
+    datasets_dict["train"] = train_df  # Override
+    datasets_dict["validation"] = validation_df  # Overrides
+
+    # Runs EDA analysis:
+    print("\nAnalyzing datasets by focusing on the labels:")
     EDA_Analysis(datasets_dict)
+    print("Done plotting the original splits datasets.")
 
 
-
-
-
-
-
-
-    return 0 # Success
-
-
-
+    return 0  # Success
 
 
 
 
 if __name__ == "__main__":
-    main(chosen_seed=42)
+    main(chosen_seed=SEED)
