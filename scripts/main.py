@@ -1,4 +1,5 @@
-# This file is the main project file, running the full experiment.
+
+# This file is the main project file, running the full pipeline.
 
 # For loading dataset from hf_cache:
 import os
