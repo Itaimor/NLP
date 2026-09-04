@@ -138,6 +138,8 @@ def main(chosen_seed,tau_thresholds):
 
     # Runs EDA analysis:
     EDA_Analysis(datasets_dict)
+    # Removes "full" key as it is not at use anymore
+    datasets_dict.pop("full", None)
 
 
     # Runs SciBert
