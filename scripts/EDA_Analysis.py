@@ -305,6 +305,8 @@ def EDA_Analysis(datasets_dict):
     Outputs: None
     """
 
+    print("\nAnalyzing datasets by focusing on the labels:")
+
     # Analyze each dataset:
     for name, dataframe in datasets_dict.items():
 
@@ -314,4 +316,5 @@ def EDA_Analysis(datasets_dict):
         # Plot label analysis:
         plot_label_analysis(label_stats, dataset_name=name)
 
+    print("Done plotting the original splits datasets.")
     return None

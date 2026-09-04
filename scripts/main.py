@@ -27,7 +27,6 @@ SEED = 42
 
 
 
-## General: fixes seed and data loading ##
 
 def set_seed(seed):
     """
@@ -125,7 +124,6 @@ def split_train_validation(train_df, seed, validation_size=0.15):
 def main(chosen_seed):
     """  Runs the complete project pipeline.  """
 
-
     set_seed(chosen_seed)
 
     # Loads and splits the training set to train and validation:
@@ -138,9 +136,14 @@ def main(chosen_seed):
     datasets_dict["validation"] = validation_df  # Overrides
 
     # Runs EDA analysis:
-    print("\nAnalyzing datasets by focusing on the labels:")
     EDA_Analysis(datasets_dict)
-    print("Done plotting the original splits datasets.")
+
+
+    # Runs SciBert
+    # TODO
+
+    # Runs Gemma
+    # TODO
 
 
     return 0  # Success
