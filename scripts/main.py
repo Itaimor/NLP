@@ -23,7 +23,7 @@ from EDA_Analysis import EDA_Analysis
 # Global variables:
 SAVE_PATH = ""
 SEED = 42
-
+TAU_THRESHOLDS = []
 
 
 
@@ -121,7 +121,7 @@ def split_train_validation(train_df, seed, validation_size=0.15):
 
 
 
-def main(chosen_seed):
+def main(chosen_seed,tau_thresholds):
     """  Runs the complete project pipeline.  """
 
     set_seed(chosen_seed)
@@ -152,4 +152,4 @@ def main(chosen_seed):
 
 
 if __name__ == "__main__":
-    main(chosen_seed=SEED)
+    main(chosen_seed=SEED,tau_thresholds=TAU_THRESHOLDS)
