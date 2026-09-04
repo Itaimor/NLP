@@ -1,6 +1,5 @@
 # This python file implements the Exploratory Data Analysis (EDA) part.
 
-
 # General imports:
 import pandas as pd
 import matplotlib.pyplot as plt
