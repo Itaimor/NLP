@@ -1,4 +1,5 @@
 # By Shai Habi, September 4th, 2026.
+# This file implements the SciBERT part in our project
 
 from transformers import AutoModelForSequenceClassification
 from peft import LoraConfig, TaskType, get_peft_model
