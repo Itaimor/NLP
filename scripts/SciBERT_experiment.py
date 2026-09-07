@@ -92,17 +92,16 @@ def evaluate(model, data_loader, device):
                 labels=labels,
             )
 
-            logits = outputs.logits
-            probabilities = torch.sigmoid(logits)
-
             loss = outputs.loss
             total_loss += loss.item()
 
+            logits = outputs.logits
+            probabilities = torch.sigmoid(logits)
             all_probabilities.append(probabilities.cpu())
+
             all_labels.append(labels.cpu())
 
     average_loss = total_loss / len(data_loader)
-
     all_probabilities = torch.cat(all_probabilities, dim=0)
     all_labels = torch.cat(all_labels, dim=0)
 
@@ -422,7 +421,7 @@ def full_train_for_one_configuration(
     load_model_state_dict(model, best_model_state)
     model.eval()
 
-    best_configuration = {
+    training_info = {
         "original_best_epoch": best_epoch + 1,
         "num_epochs": num_epochs,
         "batch_size": train_loader.batch_size,
@@ -434,7 +433,7 @@ def full_train_for_one_configuration(
     torch.save(
         {
             "model_state_dict": best_model_state,
-            "best_configuration": best_configuration,
+            "best_configuration": training_info,
             "best_evaluation_results": best_evaluation_results,
             "best_validation_loss": best_validation_loss,
         },
@@ -448,7 +447,44 @@ def full_train_for_one_configuration(
 
     return (
         model,
-        best_configuration,
+        training_info,
         best_evaluation_results,
         best_validation_loss,
     )
+
+
+
+
+
+def run_SciBERT_experiment(mode):
+    # 1. Extracts the relevant configurations for the mode (lora / full).
+    #    Note: I think the best implementation will be reading from external file.
+    #    where we will control all the configuration over all the project's pipeline.
+    # 2. Initializes variables for choosing the best configuration
+    #    and collecting results for all configurations.
+    # 3. Creates dataloaders.
+    #    Note: If batch_size changes between configurations, create the
+    #    relevant dataloader inside the loop. The data split stays fixed.
+    # 4. Saves start_time.
+    # 5. For each configuration:
+    # 5.1. Builds the relevant directory path.
+    # 5.2. Runs build_scibert and moves the model to the device.
+    # 5.3. Creates a new optimizer and, if needed, scheduler. (according to conf)
+    # 5.4. Runs full_train_for_one_configuration:
+    #      selects the best epoch according to validation loss.
+    # 5.5. Chooses the best tau using the returned validation probabilities
+    #      and true labels, without rerunning the model.
+    #      Uses a predefined metric (like F1) and the same tau options for all configurations.
+    # 5.6. Saves this configuration's results for comparisons and plots.
+    # 5.7. Compares against the best configuration so far using the chosen validation metric.
+    #       If improved, saves:
+    #       configuration, best epoch's weights path, selected tau, and metrics' scores.
+    # 6. Saves end_time.
+    # 7. Creates plots, if wanted.
+    # 8. Optionally evaluates the selected model on test using its selected tau.
+    #    This can also be handled by an external function.
+    # 9. Returns the winning configuration's details, **TIME**,  and all configuration results.
+
+
+
+    pass
