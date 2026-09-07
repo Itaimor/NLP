@@ -22,7 +22,6 @@ from EDA_Analysis import EDA_Analysis
 
 
 # Global variables:
-SAVE_PATH = ""
 SEED = 42
 TAU_THRESHOLDS = []
 
@@ -142,8 +141,11 @@ def main(chosen_seed,tau_thresholds):
     datasets_dict.pop("full", None)
 
 
-    # Runs SciBert
+    # Runs SciBert - full
     # TODO
+
+    # Runs SciBERT - LORA
+    #TODO
 
     # Runs Gemma
     # TODO
