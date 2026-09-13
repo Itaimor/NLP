@@ -2,6 +2,34 @@
 
 *A complete, self-contained description of the project — its research question, data, models, methodology, decisions, and constraints.*
 
+> **STATUS (13 September 2026): this document is superseded by `WORK_PLAN.md` wherever the two differ.**
+> It was last revised on 31 August and is kept as the record of the reasoning; the plan carries the
+> decisions. Read the following ten items as struck through:
+> 1. §4 / §8 / §10 / §12 — the threshold effect is "24.6x" *(a tuned-on-test figure)*. Honest figure,
+>    tau tuned on the carved validation split, seed-42 split: rare-band macro-F1 0.0078 → 0.324 (~40x);
+>    micro 0.011 → 0.362. Robust claim: "more than 20x, and it survives honest tuning."
+> 2. §8 "one global tau per arm" (and, two sentences later, "tune the tail-band tau") — replaced by the
+>    §4 tau row of the plan: **one tau per band per arm, chosen on validation to maximise that band's
+>    micro-F1**; a single global tau is one robustness row. Reason: the same predictions give a
+>    rare-band macro-F1 of 0.156 / 0.258 / 0.324 depending only on that rule.
+> 3. §6.3 / §8 — bands "assigned once from training-split frequencies": the training split is the
+>    **18,677-paper** shipped training set (12 / 383 / 1,469; 410 scoreable tail), which is the basis of
+>    Alkan et al.'s Table 6 ("78% of concepts < 50" = 1,469/1,864); the corpus-wide 17 / 429 / 1,418 is
+>    their Table 3 and is reported alongside. Never the 15,822-paper carve.
+> 4. §6.1 — the carve is **2,855 validation / 15,822 train** (label-stratified, seed 42), not ~2,802 / ~15,875.
+> 5. §7.4 / §12 — Gemma output by "shortlist log-probability scoring" → **prompt-and-select** over
+>    SciBERT's top-50 (plan Stage 5), with the rank score 1 − r/51 used for P@k only.
+> 6. §7.4 — Gemma sequence length 640 → **~1,000 tokens** (50 candidate names in the prompt); probe at 1,024.
+> 7. §7.4 / §10 — fallback "1B trained + 4B prompted-only" → both arms the same model (1B if 4B does not
+>    fit training); if 5b is cut, 5a alone re-run at 4B.
+> 8. §8 — "train SciBERT-LoRA at 3 seeds" → one seed, paired bootstrap, stated as a limitation.
+> 9. §9 — "requirements.txt is missing torch/…" (fixed 30 Aug); "no checkpoint or resume code exists"
+>    (exists since 6 Sept); "the Slurm partition remains necessary" → not used, three machines suffice;
+>    the lecturer email discloses this.
+> 10. §12 open item "re-run the threshold sweep on the carved validation set" — done (10 Sept, 13 Sept).
+>
+> Everything in §3–§6 that is not listed above stands.
+
 ---
 
 ## 1. One-paragraph summary
