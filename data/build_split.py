@@ -17,11 +17,11 @@ carved out of the 18,677 with main.py::split_train_validation (label-stratified,
 the only place that carve is defined.
 
 Usage:
-    python scripts/build_split.py            # write the files and verify them
-    python scripts/build_split.py --check    # only verify existing files against their checksums
+    python data/build_split.py            # write the files and verify them
+    python data/build_split.py --check    # only verify existing files against their checksums
 
 From other scripts:
-    from build_split import load_split
+    sys.path.insert(0, "data"); from build_split import load_split
     s = load_split()
     s["train_df"], s["validation_df"], s["test_df"]   # pandas, rows in split.json order
     s["topic_to_idx"], s["idx_to_topic"]               # from label_order.json
@@ -40,9 +40,9 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 os.environ.setdefault("HF_HOME", str(PROJECT_ROOT / ".hf_cache"))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(PROJECT_ROOT / "scripts"))  # for main.split_train_validation
 
-DATA_DIR = PROJECT_ROOT / "data"
+DATA_DIR = Path(__file__).resolve().parent   # the files live next to this script
 FILES = ["split.json", "label_order.json", "band_map_train.json", "band_map_corpus.json", "id_to_name.json"]
 
 SEED = 42
