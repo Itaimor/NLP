@@ -3,3 +3,5 @@
 .hf_cache/
 # Local analysis notes and working scripts (not shared)
 .council/
+__pycache__/
+*.py[cod]
