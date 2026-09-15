@@ -6,7 +6,7 @@ import pandas as pd
 from pathlib import Path
 import json
 
-from evaluate import choose_tau
+from evaluate import choose_tau, save_tau_selection, evaluate_test, save_test_results
 
 ## Shared function for both baselines ##
 def build_score_dataframe_for_evaluation(df, scores, label_order):
@@ -150,7 +150,8 @@ def run_majority_baseline(
         df_output.to_parquet(temp_saves_path, index=False)
         output_dict[split_name] = df_output
 
-    # Calls choose_tau from evaluate.py
+
+    # Runs validation check with taus
     # Builds the validation correct-answer table:
     validation_real_labels_answers = build_true_labels_dataframe_for_evaluation(
         validation_df,
@@ -161,21 +162,54 @@ def run_majority_baseline(
     val_probs = output_dict["val"].iloc[:, 1:].to_numpy()
     val_labels = validation_real_labels_answers.iloc[:, 1:].to_numpy()
 
-    # Chooses one tau per band using validation and saves it:
-    chosen_taus = choose_tau(val_probs, val_labels, column_band_map)
-    name = "chosen_taus.json"
-    with (output_directory / name).open("w", encoding="utf-8") as file:
-        json.dump(chosen_taus, file, indent=4)
+    # Chooses one tau per band using validation:
+    chosen_taus = choose_tau(
+        val_probs=val_probs,
+        val_labels=val_labels,
+        band_map=column_band_map,
+    )
+    # Saves information as instructed:
+    objective = (
+            "Maximise each band's validation Micro-F1 "
+            "over labels occurring at least once in validation."
+    )
+    save_tau_selection(
+        chosen_taus=chosen_taus,
+        arm_name="majority",
+        objective=objective,
+        validation_filename="majority_val.parquet",
+        output_directory=output_directory,
+    )
 
-    # Runs test
-    ## TODO ##
+    # Runs test with already chosen taus values
+    # Builds the test correct-answer table.
+    test_real_labels_answers = build_true_labels_dataframe_for_evaluation(
+        test_df,
+        label_order,
+    )
 
+    # Extracts numeric matrices, skipping the paper_id column.
+    test_probs = output_dict["test"].iloc[:, 1:].to_numpy()
+    test_real_labels = test_real_labels_answers.iloc[:, 1:].to_numpy()
 
-    return None
+    # Evaluates test using the thresholds selected on validation.
+    test_results = evaluate_test(
+        test_probs=test_probs,
+        test_labels=test_real_labels,
+        band_map=column_band_map,
+        chosen_taus=chosen_taus,
+    )
 
+    save_test_results(
+        test_results=test_results,
+        arm_name="majority",
+        output_directory=output_directory,
+        paper_ids=test_df["bibcode"].tolist(),
+        label_order=label_order,
+    )
 
-
-
+    results = {"chosen_taus": chosen_taus, "test_results": test_results}
+    return results
 
 
 
