@@ -39,6 +39,10 @@ sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 import torch
 from datasets import load_dataset
 
+# Windows consoles default to cp1252; keep progress lines printable everywhere.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 from scibert_dataset import clean_astronomy_text
 from gemma_common import (
     N_CANDIDATES, render_prompt, parse_picks, stop_token_ids, load_quantized, git_provenance,
@@ -191,7 +195,7 @@ def main():
         print(f"batch {bs:2d}: {s_per_paper:.2f} s/paper, peak {timing[bs]['peak_reserved_gb']:.2f} GB | parse {summ['parse_rate']:.2f}, "
               f"off-list lines {summ['off_list_rate_lines']:.3f}, empty {summ['empty_output_rate']:.2f}, mean picks {summ['mean_picks']:.1f}"
               + (f" (gold {summ['mean_gold']:.1f}) | P {summ['micro_precision']:.3f} R {summ['micro_recall']:.3f} F1 {summ['micro_f1']:.3f}, "
-                 f"ceiling {summ['gold_coverage_by_shortlist']:.3f}, |y|/|gold∩list| {summ['emitted_over_gold_in_list']:.2f}" if with_gold else ""),
+                 f"ceiling {summ['gold_coverage_by_shortlist']:.3f}, |y|/|gold&list| {summ['emitted_over_gold_in_list']:.2f}" if with_gold else ""),
               flush=True)
 
     with open(out_dir / f"{tag}.jsonl", "w", encoding="utf-8") as f:
