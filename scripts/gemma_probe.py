@@ -40,6 +40,10 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = PROJECT_ROOT / "data"
 os.environ.setdefault("HF_HOME", str(PROJECT_ROOT / ".hf_cache"))
+# Without this the caching allocator fragments after a long batch, reserved memory creeps
+# towards the 8 GB card limit, and Windows silently pages GPU memory to RAM: the same
+# batches ran 3x slower in the dress rehearsal (reserved 6.94 GB vs 5.65 GB with it).
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 import torch

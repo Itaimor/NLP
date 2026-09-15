@@ -8,3 +8,4 @@ __pycache__/
 # Model weights and generated shortlists are reproducible from the scripts; too large for git
 results/**/adapter/
 results/shortlists/
+results/**/checkpoints/

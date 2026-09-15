@@ -1,0 +1,68 @@
+{
+ "model": "google/gemma-3-4b-it",
+ "code": {
+  "commit": "aacda78d06e59967f5c91c736ee7c29231821dcb",
+  "uncommitted_changes": []
+ },
+ "config": {
+  "model": "google/gemma-3-4b-it",
+  "train_shortlist": "results/shortlists/standin_tfidf_top50_train.jsonl",
+  "val_shortlist": "results/shortlists/standin_tfidf_top50_val.jsonl",
+  "split": "train",
+  "dev_holdout": 300,
+  "out": "results/gemma_train/smoke",
+  "resume": true,
+  "epochs": 1,
+  "max_steps": 100,
+  "max_hours": null,
+  "batch_size": 4,
+  "grad_accum": 1,
+  "max_len": 1024,
+  "lr": 0.0002,
+  "warmup": 50,
+  "clip": 1.0,
+  "lora_r": 16,
+  "lora_alpha": 32,
+  "seed": 42,
+  "save_every": 50,
+  "monitor_n": 16,
+  "monitor_every": 50,
+  "monitor_batch": 8,
+  "max_new_tokens": 160,
+  "log_every": 10
+ },
+ "environment": {
+  "gpu": "NVIDIA GeForce RTX 3060 Ti",
+  "torch": "2.14.0+cu130",
+  "transformers": "5.17.0",
+  "peft": "0.20.0",
+  "bitsandbytes": "0.50.2",
+  "os": "Windows-11-10.0.26200-SP0"
+ },
+ "params": {
+  "trainable": 29802496,
+  "total": 4329881968
+ },
+ "data": {
+  "training_lists": 15806,
+  "none_targets": 9,
+  "steps_per_epoch": 3952,
+  "monitor_train": 16,
+  "monitor_val": 16
+ },
+ "stop_reason": "max-steps 100 reached",
+ "state": {
+  "step": 100,
+  "epoch": 0,
+  "batch_in_epoch": 100,
+  "skipped": 0,
+  "train_s": 654.1433730125427
+ },
+ "step_seconds": {
+  "n": 50,
+  "mean": 9.662205934524536,
+  "max": 18.69252324104309,
+  "peak_alloc_gb": 5.391294479370117,
+  "peak_reserved_gb": 6.943359375
+ }
+}
