@@ -1,101 +1,158 @@
 ======================================================================
-Gemma QLoRA probe: google/gemma-3-4b-it
+Gemma QLoRA probe: google/gemma-3-4b-it   (code: c33eddc8e092ee4808a5c9a5b5607177a48a4be8)
 ======================================================================
 papers: 64 from the 15,822 training carve; gold topics per paper: mean 4.45
-tokens per example (prompt + target): min 505, median 774, max 937; 0 abstracts shortened to fit 1024
-W0915 13:00:18.490000 25772 Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
-Loading weights:   0%|          | 0/883 [00:00<?, ?it/s]Loading weights:   0%|          | 1/883 [00:01<27:23,  1.86s/it]Loading weights:   0%|          | 3/883 [00:02<07:58,  1.84it/s]Loading weights:   0%|          | 4/883 [00:02<05:48,  2.52it/s]Loading weights:   1%|1         | 11/883 [00:02<01:27,  9.98it/s]Loading weights:   2%|1         | 17/883 [00:02<00:57, 15.13it/s]Loading weights:   3%|2         | 24/883 [00:02<00:37, 23.20it/s]Loading weights:   3%|3         | 30/883 [00:02<00:30, 27.73it/s]Loading weights:   5%|4         | 42/883 [00:02<00:20, 40.53it/s]Loading weights:   5%|5         | 48/883 [00:03<00:22, 37.61it/s]Loading weights:   6%|6         | 55/883 [00:03<00:20, 41.09it/s]Loading weights:   7%|6         | 60/883 [00:03<00:21, 38.56it/s]Loading weights:   8%|7         | 68/883 [00:03<00:17, 45.38it/s]Loading weights:   8%|8         | 74/883 [00:03<00:17, 46.18it/s]Loading weights:   9%|9         | 82/883 [00:03<00:16, 47.64it/s]Loading weights:  10%|#         | 92/883 [00:03<00:13, 59.01it/s]Loading weights:  11%|#1        | 99/883 [00:04<00:16, 48.77it/s]Loading weights:  12%|#2        | 107/883 [00:04<00:14, 53.44it/s]Loading weights:  13%|#2        | 113/883 [00:04<00:15, 49.19it/s]Loading weights:  14%|#3        | 120/883 [00:04<00:15, 49.43it/s]Loading weights:  14%|#4        | 126/883 [00:04<00:15, 49.01it/s]Loading weights:  15%|#5        | 133/883 [00:04<00:16, 46.77it/s]Loading weights:  16%|#5        | 138/883 [00:04<00:16, 44.54it/s]Loading weights:  17%|#6        | 146/883 [00:04<00:14, 51.40it/s]Loading weights:  17%|#7        | 152/883 [00:05<00:14, 51.13it/s]Loading weights:  18%|#8        | 159/883 [00:05<00:13, 53.80it/s]Loading weights:  19%|#8        | 165/883 [00:05<00:13, 52.22it/s]Loading weights:  20%|#9        | 173/883 [00:05<00:13, 52.61it/s]Loading weights:  21%|##        | 185/883 [00:05<00:12, 56.77it/s]Loading weights:  22%|##1       | 191/883 [00:05<00:12, 55.77it/s]Loading weights:  23%|##2       | 199/883 [00:05<00:12, 53.35it/s]Loading weights:  24%|##3       | 208/883 [00:06<00:10, 61.46it/s]Loading weights:  24%|##4       | 215/883 [00:06<00:14, 44.62it/s]Loading weights:  25%|##5       | 225/883 [00:06<00:13, 50.51it/s]Loading weights:  27%|##6       | 237/883 [00:06<00:11, 58.59it/s]Loading weights:  28%|##7       | 244/883 [00:06<00:11, 57.46it/s]Loading weights:  28%|##8       | 251/883 [00:06<00:11, 53.94it/s]Loading weights:  30%|##9       | 261/883 [00:07<00:09, 63.70it/s]Loading weights:  30%|###       | 268/883 [00:07<00:11, 54.97it/s]Loading weights:  31%|###1      | 276/883 [00:07<00:10, 60.23it/s]Loading weights:  32%|###2      | 283/883 [00:07<00:10, 58.71it/s]Loading weights:  33%|###2      | 290/883 [00:07<00:10, 54.69it/s]Loading weights:  34%|###4      | 302/883 [00:07<00:09, 61.94it/s]Loading weights:  35%|###4      | 309/883 [00:07<00:09, 60.43it/s]Loading weights:  36%|###5      | 316/883 [00:08<00:10, 52.45it/s]Loading weights:  37%|###7      | 328/883 [00:08<00:09, 58.64it/s]Loading weights:  38%|###7      | 334/883 [00:08<00:10, 53.93it/s]Loading weights:  39%|###8      | 341/883 [00:08<00:09, 54.71it/s]Loading weights:  39%|###9      | 347/883 [00:08<00:10, 51.26it/s]Loading weights:  40%|####      | 354/883 [00:08<00:09, 52.92it/s]Loading weights:  41%|####      | 360/883 [00:08<00:10, 50.29it/s]Loading weights:  42%|####1     | 367/883 [00:08<00:10, 51.14it/s]Loading weights:  42%|####2     | 373/883 [00:09<00:10, 48.01it/s]Loading weights:  43%|####3     | 380/883 [00:09<00:10, 49.98it/s]Loading weights:  44%|####3     | 386/883 [00:09<00:10, 46.30it/s]Loading weights:  45%|####4     | 393/883 [00:09<00:09, 49.50it/s]Loading weights:  45%|####5     | 399/883 [00:09<00:10, 44.30it/s]Loading weights:  46%|####5     | 406/883 [00:09<00:10, 47.57it/s]Loading weights:  47%|####6     | 411/883 [00:09<00:11, 42.51it/s]Loading weights:  47%|####7     | 419/883 [00:10<00:10, 44.50it/s]Loading weights:  48%|####8     | 424/883 [00:10<00:11, 40.68it/s]Loading weights:  49%|####8     | 432/883 [00:10<00:09, 46.32it/s]Loading weights:  49%|####9     | 437/883 [00:10<00:13, 34.31it/s]Loading weights:  52%|#####1    | 455/883 [00:10<00:07, 60.13it/s]Loading weights:  55%|#####4    | 484/883 [00:10<00:03, 108.05it/s]Loading weights:  59%|#####8    | 519/883 [00:11<00:02, 158.44it/s]Loading weights:  61%|######1   | 543/883 [00:11<00:01, 177.87it/s]Loading weights:  64%|######4   | 569/883 [00:11<00:01, 192.56it/s]Loading weights:  68%|######8   | 601/883 [00:11<00:01, 220.57it/s]Loading weights:  72%|#######1  | 633/883 [00:11<00:01, 239.53it/s]Loading weights:  75%|#######5  | 665/883 [00:11<00:00, 257.93it/s]Loading weights:  79%|#######8  | 695/883 [00:11<00:00, 266.92it/s]Loading weights:  82%|########1 | 723/883 [00:11<00:00, 261.48it/s]Loading weights:  85%|########5 | 752/883 [00:11<00:00, 269.15it/s]Loading weights:  88%|########8 | 780/883 [00:12<00:00, 248.97it/s]Loading weights:  91%|#########1| 806/883 [00:12<00:00, 241.13it/s]Loading weights:  94%|#########4| 831/883 [00:12<00:00, 198.32it/s]Loading weights:  97%|#########7| 857/883 [00:12<00:00, 205.67it/s]Loading weights: 100%|##########| 883/883 [00:12<00:00, 70.54it/s] 
-model loaded in 22s; weights on card: 3.01 GB; trainable 29,802,496 / 2,520,025,456 params (1.183%)
-loss check on example 0: HF 3.1361 vs completion-only 3.1361
+tokens per example (prompt + target): min 504, median 773, max 936; 0 abstracts shortened to fit 1024
+W0915 18:47:07.380000 2376 Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+Loading weights:   0%|          | 0/883 [00:00<?, ?it/s]Loading weights:   0%|          | 1/883 [00:01<23:37,  1.61s/it]Loading weights:   0%|          | 4/883 [00:01<05:03,  2.89it/s]Loading weights:   2%|1         | 16/883 [00:01<01:01, 14.17it/s]Loading weights:   2%|2         | 21/883 [00:02<00:47, 18.19it/s]Loading weights:   3%|3         | 30/883 [00:02<00:31, 26.69it/s]Loading weights:   5%|4         | 42/883 [00:02<00:21, 38.75it/s]Loading weights:   6%|5         | 49/883 [00:02<00:19, 43.11it/s]Loading weights:   6%|6         | 56/883 [00:02<00:18, 45.34it/s]Loading weights:   8%|7         | 68/883 [00:02<00:14, 56.56it/s]Loading weights:   8%|8         | 75/883 [00:02<00:13, 57.94it/s]Loading weights:   9%|9         | 82/883 [00:02<00:14, 56.54it/s]Loading weights:  11%|#         | 94/883 [00:03<00:12, 65.65it/s]Loading weights:  11%|#1        | 101/883 [00:03<00:12, 64.98it/s]Loading weights:  12%|#2        | 108/883 [00:03<00:12, 61.90it/s]Loading weights:  14%|#3        | 120/883 [00:03<00:10, 72.35it/s]Loading weights:  14%|#4        | 128/883 [00:03<00:10, 71.85it/s]Loading weights:  15%|#5        | 136/883 [00:03<00:11, 63.89it/s]Loading weights:  17%|#6        | 147/883 [00:03<00:10, 71.15it/s]Loading weights:  18%|#8        | 159/883 [00:03<00:09, 78.82it/s]Loading weights:  19%|#9        | 168/883 [00:04<00:08, 80.06it/s]Loading weights:  20%|##        | 177/883 [00:04<00:09, 71.32it/s]Loading weights:  21%|##1       | 186/883 [00:04<00:09, 70.50it/s]Loading weights:  22%|##2       | 198/883 [00:04<00:08, 76.60it/s]Loading weights:  23%|##3       | 206/883 [00:04<00:09, 75.02it/s]Loading weights:  24%|##4       | 214/883 [00:04<00:10, 65.42it/s]Loading weights:  25%|##5       | 225/883 [00:04<00:09, 71.10it/s]Loading weights:  27%|##6       | 237/883 [00:05<00:08, 77.47it/s]Loading weights:  28%|##7       | 245/883 [00:05<00:08, 75.52it/s]Loading weights:  29%|##8       | 253/883 [00:05<00:09, 65.92it/s]Loading weights:  30%|##9       | 264/883 [00:05<00:08, 70.01it/s]Loading weights:  31%|###1      | 276/883 [00:05<00:08, 75.23it/s]Loading weights:  32%|###2      | 284/883 [00:05<00:08, 71.75it/s]Loading weights:  33%|###3      | 292/883 [00:05<00:09, 61.63it/s]Loading weights:  34%|###4      | 303/883 [00:06<00:08, 66.05it/s]Loading weights:  36%|###5      | 315/883 [00:06<00:07, 71.29it/s]Loading weights:  37%|###6      | 323/883 [00:06<00:08, 69.34it/s]Loading weights:  37%|###7      | 330/883 [00:06<00:09, 57.58it/s]Loading weights:  39%|###8      | 342/883 [00:06<00:08, 64.87it/s]Loading weights:  40%|####      | 354/883 [00:06<00:07, 68.74it/s]Loading weights:  41%|####      | 362/883 [00:06<00:08, 65.04it/s]Loading weights:  42%|####1     | 369/883 [00:07<00:09, 53.21it/s]Loading weights:  43%|####3     | 381/883 [00:07<00:08, 59.33it/s]Loading weights:  44%|####4     | 391/883 [00:07<00:07, 67.66it/s]Loading weights:  45%|####5     | 399/883 [00:07<00:08, 58.70it/s]Loading weights:  46%|####5     | 406/883 [00:07<00:07, 60.93it/s]Loading weights:  47%|####6     | 413/883 [00:07<00:08, 57.53it/s]Loading weights:  48%|####7     | 420/883 [00:07<00:08, 53.41it/s]Loading weights:  49%|####8     | 432/883 [00:08<00:07, 59.86it/s]Loading weights:  50%|####9     | 439/883 [00:08<00:07, 57.40it/s]Loading weights:  53%|#####3    | 471/883 [00:08<00:03, 115.34it/s]Loading weights:  57%|#####7    | 505/883 [00:08<00:02, 168.96it/s]Loading weights:  62%|######2   | 551/883 [00:08<00:01, 239.26it/s]Loading weights:  67%|######6   | 589/883 [00:08<00:01, 275.34it/s]Loading weights:  71%|#######1  | 631/883 [00:08<00:00, 308.68it/s]Loading weights:  75%|#######5  | 665/883 [00:08<00:00, 311.90it/s]Loading weights:  79%|#######9  | 701/883 [00:09<00:00, 322.30it/s]Loading weights:  83%|########3 | 735/883 [00:09<00:00, 324.20it/s]Loading weights:  87%|########7 | 769/883 [00:09<00:00, 325.09it/s]Loading weights:  92%|#########1| 809/883 [00:09<00:00, 338.77it/s]Loading weights:  97%|#########6| 855/883 [00:09<00:00, 365.16it/s]Loading weights: 100%|##########| 883/883 [00:09<00:00, 92.75it/s] 
+model loaded in 14s; weights on card: 3.01 GB; trainable 29,802,496 / 4,329,881,968 params (0.688%)
+loss check on example 0: HF 2.5715 vs completion-only 2.5715
+zero-shot: eval loss median 4.394; generation on 8 papers: 2/2 gold, 6 picks, 0 off-list, 2/2 gold, 6 picks, 0 off-list, 3/4 gold, 8 picks, 0 off-list, 3/6 gold, 4 picks, 0 off-list, 3/4 gold, 7 picks, 0 off-list, 3/3 gold, 3 picks, 0 off-list, 5/5 gold, 7 picks, 0 off-list, 5/8 gold, 6 picks, 0 off-list
 
-training 500 steps, batch 1, 1024 tokens, lr 0.0002, LoRA r=16
+training 500 steps, batch 1, 1024 tokens, lr 0.0002, clip 1.0, LoRA r=16
 [transformers] `use_cache=True` is incompatible with gradient checkpointing. Setting `use_cache=False`.
-step    0  loss 4.5858  2.20s  peak alloc 3.65 GB  reserved 4.15 GB
-step   10  loss 1.6877  1.83s  peak alloc 3.87 GB  reserved 4.15 GB
-step   20  loss 1.1296  2.37s  peak alloc 3.87 GB  reserved 4.15 GB
-step   30  loss 0.7964  1.76s  peak alloc 3.87 GB  reserved 4.15 GB
-step   40  loss 1.5634  1.69s  peak alloc 3.87 GB  reserved 4.15 GB
-step   50  loss 0.8754  2.18s  peak alloc 3.87 GB  reserved 4.15 GB
-step   60  loss 0.7074  1.70s  peak alloc 3.87 GB  reserved 4.15 GB
-step   70  loss 0.4190  1.76s  peak alloc 3.87 GB  reserved 4.15 GB
-step   80  loss 0.3526  1.79s  peak alloc 3.87 GB  reserved 4.15 GB
-step   90  loss 1.1754  1.99s  peak alloc 3.87 GB  reserved 4.15 GB
-step  100  loss 0.1550  1.74s  peak alloc 3.87 GB  reserved 4.15 GB
-step  110  loss 0.4532  1.95s  peak alloc 3.87 GB  reserved 4.15 GB
-step  120  loss 0.7912  2.17s  peak alloc 3.87 GB  reserved 4.15 GB
-step  130  loss 0.2006  1.78s  peak alloc 3.87 GB  reserved 4.15 GB
-step  140  loss 0.1502  2.00s  peak alloc 3.87 GB  reserved 4.15 GB
-step  150  loss 0.4579  1.73s  peak alloc 3.87 GB  reserved 4.15 GB
-step  160  loss 0.8076  1.73s  peak alloc 3.87 GB  reserved 4.15 GB
-step  170  loss 0.8455  1.82s  peak alloc 3.87 GB  reserved 4.15 GB
-step  180  loss 0.4273  1.80s  peak alloc 3.87 GB  reserved 4.15 GB
-step  190  loss 0.6409  1.71s  peak alloc 3.87 GB  reserved 4.15 GB
-step  200  loss 1.1011  1.96s  peak alloc 3.87 GB  reserved 4.15 GB
-step  210  loss 0.1250  1.71s  peak alloc 3.87 GB  reserved 4.15 GB
-step  220  loss 0.4731  1.74s  peak alloc 3.87 GB  reserved 4.15 GB
-step  230  loss 0.1113  1.76s  peak alloc 3.87 GB  reserved 4.15 GB
-step  240  loss 0.1948  1.70s  peak alloc 3.87 GB  reserved 4.15 GB
-step  250  loss 0.0242  1.61s  peak alloc 3.87 GB  reserved 4.15 GB
-step  260  loss 0.0533  1.61s  peak alloc 3.87 GB  reserved 4.15 GB
-step  270  loss 0.0078  2.07s  peak alloc 3.87 GB  reserved 4.15 GB
-step  280  loss 0.0250  1.70s  peak alloc 3.87 GB  reserved 4.15 GB
-step  290  loss 0.0183  2.13s  peak alloc 3.87 GB  reserved 4.15 GB
-step  300  loss 0.3565  1.74s  peak alloc 3.87 GB  reserved 4.15 GB
-step  310  loss 0.3639  1.61s  peak alloc 3.87 GB  reserved 4.15 GB
-step  320  loss 0.5030  1.61s  peak alloc 3.87 GB  reserved 4.15 GB
-step  330  loss 0.4980  1.61s  peak alloc 3.87 GB  reserved 4.15 GB
-step  340  loss 0.7007  1.61s  peak alloc 3.87 GB  reserved 4.15 GB
-step  350  loss 0.4634  1.61s  peak alloc 3.87 GB  reserved 4.15 GB
-step  360  loss 0.0635  1.66s  peak alloc 3.87 GB  reserved 4.15 GB
-step  370  loss 0.2079  1.61s  peak alloc 3.87 GB  reserved 4.15 GB
-step  380  loss 0.4474  1.61s  peak alloc 3.87 GB  reserved 4.15 GB
-step  390  loss 0.0006  1.61s  peak alloc 3.87 GB  reserved 4.15 GB
-step  400  loss 0.0351  1.61s  peak alloc 3.87 GB  reserved 4.15 GB
-step  410  loss 0.1023  1.61s  peak alloc 3.87 GB  reserved 4.15 GB
-step  420  loss 0.0036  1.60s  peak alloc 3.87 GB  reserved 4.15 GB
-step  430  loss 0.4830  1.61s  peak alloc 3.87 GB  reserved 4.15 GB
-step  440  loss 0.0002  1.61s  peak alloc 3.87 GB  reserved 4.15 GB
-step  450  loss 0.0003  1.61s  peak alloc 3.87 GB  reserved 4.15 GB
-step  460  loss 0.0015  1.61s  peak alloc 3.87 GB  reserved 4.15 GB
-step  470  loss 0.0167  1.61s  peak alloc 3.87 GB  reserved 4.15 GB
-step  480  loss 0.0001  1.61s  peak alloc 3.87 GB  reserved 4.15 GB
-step  490  loss 0.4474  1.61s  peak alloc 3.87 GB  reserved 4.15 GB
-step  499  loss 0.0256  1.61s  peak alloc 3.87 GB  reserved 4.15 GB
+step    0  loss 2.9090  gnorm 240.18  1.74s  peak alloc 3.65 GB  reserved 4.15 GB
+step   10  loss 1.6373  gnorm 33.96  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
+step   20  loss 1.0598  gnorm 9.55  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
+step   30  loss 0.5619  gnorm 9.18  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
+step   40  loss 0.9537  gnorm 28.52  1.63s  peak alloc 3.87 GB  reserved 4.15 GB
+step   50  loss 1.1264  gnorm 10.38  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
+step   60  loss 0.7047  gnorm 6.11  1.63s  peak alloc 3.87 GB  reserved 4.15 GB
+step   70  loss 0.3964  gnorm 4.15  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
+step   80  loss 0.5878  gnorm 10.02  1.61s  peak alloc 3.87 GB  reserved 4.15 GB
+step   90  loss 0.5350  gnorm 20.34  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
+step  100  loss 0.2107  gnorm 4.33  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
+step  110  loss 0.3165  gnorm 10.74  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
+step  120  loss 0.9376  gnorm 10.49  1.68s  peak alloc 3.87 GB  reserved 4.15 GB
+step  130  loss 0.1708  gnorm 5.54  1.61s  peak alloc 3.87 GB  reserved 4.15 GB
+step  140  loss 0.3047  gnorm 7.10  1.61s  peak alloc 3.87 GB  reserved 4.15 GB
+step  150  loss 0.5258  gnorm 7.92  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
+step  160  loss 0.1959  gnorm 12.85  1.64s  peak alloc 3.87 GB  reserved 4.15 GB
+step  170  loss 0.8464  gnorm 7.68  1.63s  peak alloc 3.87 GB  reserved 4.15 GB
+step  180  loss 0.6402  gnorm 7.15  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
+step  190  loss 0.2190  gnorm 6.71  1.61s  peak alloc 3.87 GB  reserved 4.15 GB
+step  200  loss 0.7668  gnorm 9.16  1.61s  peak alloc 3.87 GB  reserved 4.15 GB
+step  210  loss 0.1149  gnorm 4.69  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
+step  220  loss 0.2576  gnorm 6.53  1.61s  peak alloc 3.87 GB  reserved 4.15 GB
+step  230  loss 0.0002  gnorm 0.01  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
+step  240  loss 0.2885  gnorm 5.52  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
+step  250  loss 0.2727  gnorm 8.04  1.61s  peak alloc 3.87 GB  reserved 4.15 GB
+step  260  loss 0.1018  gnorm 3.47  1.61s  peak alloc 3.87 GB  reserved 4.15 GB
+step  270  loss 0.0002  gnorm 0.01  1.63s  peak alloc 3.87 GB  reserved 4.15 GB
+step  280  loss 0.0022  gnorm 0.06  1.61s  peak alloc 3.87 GB  reserved 4.15 GB
+step  290  loss 0.2713  gnorm 9.03  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
+step  300  loss 0.4396  gnorm 5.29  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
+step  310  loss 0.1550  gnorm 5.26  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
+step  320  loss 0.2915  gnorm 10.55  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
+step  330  loss 0.7925  gnorm 5.38  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
+step  340  loss 0.0262  gnorm 1.72  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
+step  350  loss 0.5533  gnorm 7.46  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
+step  360  loss 0.0015  gnorm 0.68  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
+step  370  loss 0.0021  gnorm 0.09  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
+step  380  loss 0.1915  gnorm 2.97  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
+step  390  loss 0.0004  gnorm 0.04  1.61s  peak alloc 3.87 GB  reserved 4.15 GB
+step  400  loss 0.3827  gnorm 13.68  1.63s  peak alloc 3.87 GB  reserved 4.15 GB
+step  410  loss 0.0091  gnorm 1.06  1.61s  peak alloc 3.87 GB  reserved 4.15 GB
+step  420  loss 0.0135  gnorm 2.44  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
+step  430  loss 0.9089  gnorm 11.76  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
+step  440  loss 0.0001  gnorm 0.01  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
+step  450  loss 0.0016  gnorm 0.22  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
+step  460  loss 0.2367  gnorm 16.91  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
+step  470  loss 0.0070  gnorm 0.51  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
+step  480  loss 0.0030  gnorm 0.21  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
+step  490  loss 0.1184  gnorm 8.39  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
+step  499  loss 0.1939  gnorm 17.23  1.62s  peak alloc 3.87 GB  reserved 4.15 GB
 
-[2020ApJ...891...91D] gold 6 | picked 9 | hits 6 | off-list 0
-solar magnetic fields
-spectropolarimetry
-radiative transfer simulations
-quiet solar chromosphere
-active solar chromosphere
-solar transition region
-solar optical telescopes
-solar neutrinos
-semi-detached binary stars
-
-[2020ApJ...891..106A] gold 2 | picked 3 | hits 2 | off-list 0
-gravitational collapse
+[2020ApJ...891..106A] gold 2 | picked 2 | hits 2 | off-list 0 | EXACT
 gamma-ray bursts
 astronomy data analysis
 
-[2020ApJ...892..134W] gold 3 | picked 3 | hits 3 | off-list 0
-solar corona
-solar coronal loops
-solar active regions
+[2020ApJ...898L..35S] gold 2 | picked 2 | hits 2 | off-list 0 | EXACT
+exoplanet atmospheres
+exoplanet detection methods
 
-[2020ApJ...892L..35B] gold 8 | picked 8 | hits 8 | off-list 2
-gravitational wave sources
-gravitational waves
-white dwarf stars
-compact binary stars
-dc stars
-da stars
-detached binary stars
-gravitational wave
-white dwarf
-compact objects
+[2021AJ....161..218D] gold 4 | picked 4 | hits 4 | off-list 0 | EXACT
+astroinformatics
+astronomy data analysis
+convolutional neural networks
+comets
+
+[2021AJ....162....2K] gold 6 | picked 9 | hits 6 | off-list 0
+starspots
+t tauri stars
+variable stars
+pre-main sequence stars
+late-type dwarf stars
+alpha cygni variable stars
+delta scuti variable stars
+peculiar variable stars
+timing variation methods
+
+[2021ApJ...909..213K] gold 4 | picked 5 | hits 4 | off-list 0
+galaxy evolution
+galaxy chemical evolution
+interstellar medium
+interstellar dust
+interstellar dust extinction
+
+[2023ApJ...952...37C] gold 3 | picked 3 | hits 3 | off-list 0 | EXACT
+mars
+magnetic fields
+plasma physics
+
+[2024ApJ...967...88C] gold 5 | picked 5 | hits 5 | off-list 0 | EXACT
+active galactic nuclei
+galaxy accretion disks
+massive stars
+stellar mergers
+stellar evolution
+
+[2024ApJS..270...17M] gold 8 | picked 6 | hits 6 | off-list 1
+heliosphere
+solar wind
+pickup ions
+interstellar medium
+solar cycle
+solar activity
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar wind
+solar
 
 ======================================================================
 VERDICT: FITS -- use this size for 5b
-status: completed; peak reserved 4.15 GB; 1.72 s/step; loss 4.586 -> 0.026
+status: completed; peak reserved 4.15 GB; 1.63 s/step; eval-mode loss median 4.394 -> 0.024; exact target match 5/8 (zero-shot 0/8)
 report: D:\Users\LOGIN\Desktop\Ilana\NLP\NLP\results\gemma_probe\gemma-3-4b-it\probe_report.md
