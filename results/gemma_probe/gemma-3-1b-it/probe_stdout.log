@@ -1,0 +1,117 @@
+======================================================================
+Gemma QLoRA probe: google/gemma-3-1b-it   (code: e89c88c84c8a9a295f66d528bec54f2566ae21a9)
+======================================================================
+papers: 64 from the 15,822 training carve; gold topics per paper: mean 4.45
+D:\Users\LOGIN\Desktop\Ilana\NLP\NLP\.venv\Lib\site-packages\huggingface_hub\file_download.py:143: UserWarning: `huggingface_hub` cache-system uses symlinks by default to efficiently store duplicated files but your machine does not support them in D:\Users\LOGIN\Desktop\Ilana\NLP\NLP\.hf_cache\hub\models--google--gemma-3-1b-it. Caching files will still work but in a degraded version that might require more space on your disk. This warning can be disabled by setting the `HF_HUB_DISABLE_SYMLINKS_WARNING` environment variable. For more details, see https://huggingface.co/docs/huggingface_hub/how-to-cache#limitations.
+To support symlinks on Windows, you either need to activate Developer Mode or to run Python as an administrator. In order to activate developer mode, see this article: https://docs.microsoft.com/en-us/windows/apps/get-started/enable-your-device-for-development
+  warnings.warn(message)
+tokens per example (prompt + target): min 504, median 773, max 936; 0 abstracts shortened to fit 1024
+W0915 19:02:56.217000 1640 Lib\site-packages\torch\utils\flop_counter.py:113] triton not found; flop counting will not work for triton kernels
+Loading weights:   0%|          | 0/340 [00:00<?, ?it/s]Loading weights:   0%|          | 1/340 [00:00<03:43,  1.51it/s]Loading weights:   5%|4         | 16/340 [00:00<00:11, 27.67it/s]Loading weights:  12%|#2        | 42/340 [00:00<00:04, 72.01it/s]Loading weights:  20%|##        | 68/340 [00:00<00:02, 111.31it/s]Loading weights:  28%|##7       | 94/340 [00:01<00:01, 144.94it/s]Loading weights:  35%|###5      | 120/340 [00:01<00:01, 171.70it/s]Loading weights:  43%|####2     | 146/340 [00:01<00:01, 193.77it/s]Loading weights:  51%|#####     | 172/340 [00:01<00:00, 211.46it/s]Loading weights:  58%|#####8    | 198/340 [00:01<00:00, 223.79it/s]Loading weights:  66%|######6   | 225/340 [00:01<00:00, 229.33it/s]Loading weights:  74%|#######4  | 252/340 [00:01<00:00, 234.79it/s]Loading weights:  82%|########1 | 278/340 [00:01<00:00, 235.95it/s]Loading weights:  89%|########9 | 304/340 [00:01<00:00, 233.48it/s]Loading weights:  97%|#########7| 330/340 [00:02<00:00, 230.53it/s]Loading weights: 100%|##########| 340/340 [00:02<00:00, 164.51it/s]
+model loaded in 6s; weights on card: 0.90 GB; trainable 13,045,760 / 1,012,931,712 params (1.288%)
+loss check on example 0: HF 4.6237 vs completion-only 4.6237
+zero-shot: eval loss median 6.084; generation on 8 papers: 0/2 gold, 0 picks, 7 off-list, 2/2 gold, 17 picks, 3 off-list, 2/4 gold, 19 picks, 1 off-list, 0/6 gold, 0 picks, 4 off-list, 0/4 gold, 0 picks, 13 off-list, 1/3 gold, 18 picks, 2 off-list, 0/5 gold, 0 picks, 7 off-list, 5/8 gold, 11 picks, 3 off-list
+
+training 500 steps, batch 1, 1024 tokens, lr 0.0002, clip 1.0, LoRA r=16
+step    0  loss 10.2984  gnorm 130.64  0.70s  peak alloc 1.23 GB  reserved 1.44 GB
+step   10  loss 1.3791  gnorm 33.06  0.57s  peak alloc 1.32 GB  reserved 1.65 GB
+step   20  loss 1.9532  gnorm 9.89  0.57s  peak alloc 1.32 GB  reserved 1.65 GB
+step   30  loss 1.1529  gnorm 16.47  0.56s  peak alloc 1.32 GB  reserved 1.77 GB
+step   40  loss 1.3519  gnorm 9.42  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step   50  loss 1.5384  gnorm 14.62  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step   60  loss 0.6173  gnorm 13.96  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step   70  loss 0.7691  gnorm 8.77  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step   80  loss 1.0666  gnorm 8.63  0.59s  peak alloc 1.32 GB  reserved 1.77 GB
+step   90  loss 0.5017  gnorm 18.85  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step  100  loss 0.5450  gnorm 12.71  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step  110  loss 1.2664  gnorm 10.16  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step  120  loss 0.6473  gnorm 6.16  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step  130  loss 0.9576  gnorm 15.51  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step  140  loss 0.8377  gnorm 5.30  0.58s  peak alloc 1.32 GB  reserved 1.77 GB
+step  150  loss 0.8714  gnorm 12.70  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step  160  loss 0.6172  gnorm 11.03  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step  170  loss 1.1461  gnorm 9.25  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step  180  loss 0.4136  gnorm 13.69  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step  190  loss 0.2605  gnorm 5.04  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step  200  loss 0.6766  gnorm 9.01  0.69s  peak alloc 1.32 GB  reserved 1.77 GB
+step  210  loss 0.2867  gnorm 5.41  0.62s  peak alloc 1.32 GB  reserved 1.77 GB
+step  220  loss 1.0216  gnorm 19.67  0.62s  peak alloc 1.32 GB  reserved 1.77 GB
+step  230  loss 0.0213  gnorm 1.01  0.60s  peak alloc 1.32 GB  reserved 1.77 GB
+step  240  loss 0.6214  gnorm 15.46  0.60s  peak alloc 1.32 GB  reserved 1.77 GB
+step  250  loss 0.2196  gnorm 12.38  0.60s  peak alloc 1.32 GB  reserved 1.77 GB
+step  260  loss 0.2800  gnorm 4.69  0.64s  peak alloc 1.32 GB  reserved 1.77 GB
+step  270  loss 0.0050  gnorm 0.18  0.63s  peak alloc 1.32 GB  reserved 1.77 GB
+step  280  loss 0.0572  gnorm 1.87  0.58s  peak alloc 1.32 GB  reserved 1.77 GB
+step  290  loss 0.5125  gnorm 17.93  0.60s  peak alloc 1.32 GB  reserved 1.77 GB
+step  300  loss 0.6086  gnorm 8.82  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step  310  loss 1.1052  gnorm 11.38  0.58s  peak alloc 1.32 GB  reserved 1.77 GB
+step  320  loss 0.7251  gnorm 8.12  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step  330  loss 0.2639  gnorm 7.51  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step  340  loss 0.3862  gnorm 9.91  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step  350  loss 0.2043  gnorm 7.90  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step  360  loss 0.6936  gnorm 41.07  0.56s  peak alloc 1.32 GB  reserved 1.77 GB
+step  370  loss 1.0000  gnorm 25.70  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step  380  loss 0.4052  gnorm 6.50  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step  390  loss 0.0018  gnorm 0.13  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step  400  loss 0.1084  gnorm 5.56  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step  410  loss 0.1623  gnorm 4.16  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step  420  loss 0.0291  gnorm 1.09  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step  430  loss 1.5500  gnorm 22.28  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step  440  loss 0.0006  gnorm 0.05  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step  450  loss 0.0001  gnorm 0.01  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step  460  loss 0.0125  gnorm 1.12  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step  470  loss 0.0486  gnorm 5.06  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step  480  loss 1.7674  gnorm 174.52  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step  490  loss 0.1877  gnorm 9.70  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+step  499  loss 0.3197  gnorm 10.01  0.57s  peak alloc 1.32 GB  reserved 1.77 GB
+
+[2020ApJ...891..106A] gold 2 | picked 2 | hits 2 | off-list 0 | EXACT
+gamma-ray bursts
+astronomy data analysis
+
+[2020ApJ...898L..35S] gold 2 | picked 2 | hits 2 | off-list 0 | EXACT
+exoplanet atmospheres
+exoplanet detection methods
+
+[2021AJ....161..218D] gold 4 | picked 4 | hits 4 | off-list 0 | EXACT
+astroinformatics
+astronomy data analysis
+convolutional neural networks
+comets
+
+[2021AJ....162....2K] gold 6 | picked 6 | hits 5 | off-list 1
+starspots
+pre-main sequence stars
+t tauri stars
+late-type dwarf stars
+peculiar variable stars
+solar corona
+solar transition region
+
+[2021ApJ...909..213K] gold 4 | picked 4 | hits 4 | off-list 0 | EXACT
+galaxy evolution
+interstellar medium
+interstellar dust
+interstellar dust extinction
+
+[2023ApJ...952...37C] gold 3 | picked 3 | hits 3 | off-list 0 | EXACT
+mars
+magnetic fields
+plasma physics
+
+[2024ApJ...967...88C] gold 5 | picked 4 | hits 4 | off-list 0
+active galactic nuclei
+galaxy accretion disks
+massive stars
+stellar mergers
+
+[2024ApJS..270...17M] gold 8 | picked 4 | hits 4 | off-list 0
+heliosphere
+solar wind
+pickup ions
+interstellar medium
+
+======================================================================
+VERDICT: FITS -- use this size for 5b
+status: completed; peak reserved 1.77 GB; 0.58 s/step; eval-mode loss median 6.084 -> 0.063; exact target match 5/8 (zero-shot 0/8)
+report: D:\Users\LOGIN\Desktop\Ilana\NLP\NLP\results\gemma_probe\gemma-3-1b-it\probe_report.md
