@@ -43,13 +43,12 @@ os.environ.setdefault("HF_HOME", str(PROJECT_ROOT / ".hf_cache"))
 sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 import torch
-import torch.nn.functional as F
 from datasets import load_dataset
 
 from scibert_dataset import clean_astronomy_text
 from gemma_common import (
     N_CANDIDATES, render_prompt, encode_training_example, parse_picks, stop_token_ids,
-    load_quantized, git_provenance,
+    load_quantized, git_provenance, attach_lora, set_train_mode, completion_loss,
 )
 
 
@@ -102,65 +101,10 @@ def build_example(row, id_to_name, all_names, rng):
 # ----------------------------------------------------------------------------
 
 def load_model(model_name, attn_impl, lora_r, lora_alpha):
-    from peft import LoraConfig, get_peft_model
-
     tokenizer, model = load_quantized(model_name, attn_impl)
     weights_gb = torch.cuda.memory_allocated() / 1024 ** 3
-
-    # Manual k-bit prep. peft's prepare_model_for_kbit_training would also upcast every
-    # bf16 parameter to fp32 -- for Gemma that is the 262k x 2560 embedding (tied lm_head),
-    # +1.3 GB on an 8 GB card. Gemma3RMSNorm already computes in fp32 internally.
-    for p in model.parameters():
-        p.requires_grad_(False)
-    set_train_mode(model, True)
-    model.enable_input_require_grads()
-
-    # The 4B checkpoint is multimodal (language_model + vision_tower); only the language
-    # model's projections get adapters. The 1B checkpoint is text-only.
-    proj = "(q_proj|k_proj|v_proj|o_proj|gate_proj|up_proj|down_proj)"
-    if any("language_model" in n for n, _ in model.named_modules()):
-        target_modules = rf".*language_model.*\.{proj}$"
-    else:
-        target_modules = rf".*\.{proj}$"
-
-    lora_cfg = LoraConfig(
-        r=lora_r, lora_alpha=lora_alpha, lora_dropout=0.05, bias="none",
-        target_modules=target_modules, task_type="CAUSAL_LM",
-    )
-    model = get_peft_model(model, lora_cfg)
+    model = attach_lora(model, r=lora_r, alpha=lora_alpha)
     return tokenizer, model, weights_gb
-
-
-def set_train_mode(model, training):
-    """Training: gradient checkpointing on, KV cache off, dropout on. Eval / generation: the
-    reverse. Kept in one place so the two are never left half-switched after a monitor."""
-    base = model.get_base_model() if hasattr(model, "get_base_model") else model
-    if training:
-        base.config.use_cache = False
-        base.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
-        model.train()
-    else:
-        base.gradient_checkpointing_disable()
-        base.config.use_cache = True
-        model.eval()
-
-
-def completion_loss(model, batch):
-    """
-    Cross-entropy over the completion positions only. Mathematically identical to the HF
-    forward-with-labels loss (mean over non-ignored positions), but it runs lm_head on the
-    ~20 target positions instead of all 1,024 -- Gemma's 262k vocabulary makes the full
-    logit tensor ~1 GB in fp32 per sequence, which is what decides whether batch > 1 fits.
-    """
-    base = model.get_base_model()
-    hidden = base.model(input_ids=batch["input_ids"], attention_mask=batch["attention_mask"]).last_hidden_state
-    shift_labels = batch["labels"][:, 1:]
-    keep = shift_labels != -100
-    logits = base.lm_head(hidden[:, :-1][keep]).float()
-    cap = getattr(base.config.get_text_config(), "final_logit_softcapping", None)
-    if cap:
-        logits = torch.tanh(logits / cap) * cap
-    return F.cross_entropy(logits, shift_labels[keep])
 
 
 def hf_loss(model, batch):
