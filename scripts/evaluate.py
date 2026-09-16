@@ -7,20 +7,38 @@ import hashlib
 import json
 import subprocess
 from pathlib import Path
+from datetime import datetime
+
 
 # Global Variable:
+SHIFT = "   "
+BANDS = ("head", "torso", "tail")
+RUN_DATATIME = datetime.now().strftime("%d/%m/%Y %H:%M")
 TAU_CANDIDATES = tuple(sorted(set(
       [round(i * 0.005, 3) for i in range(1, 21)]  # 0.005 to 0.10 (include)
     + [round(0.10 + i * 0.02, 3) for i in range(1, 23)] # 0.12 to 0.54 (include)
 )))
 
-BANDS = ("head", "torso", "tail")
-
-
-def validate_evaluation_inputs(probabilities, true_labels, band_map):
+## Section: Validating inputs ##
+def validate_evaluation_inputs(
+        probabilities,
+        true_labels,
+        band_map=None,
+        isEvaluateThreshold=False,
+):
     """
     Validates NumPy score and answer matrices and their band mapping.
     Raises ValueError for invalid inputs.
+
+    Inputs:
+    --- probabilities: 2D NumPy array of prediction probabilities.
+    --- true_labels: 2D NumPy array of binary correct answers, with the same
+        shape as probabilities.
+    --- band_map: optional dictionary mapping each label-column index to
+        "head", "torso" or "tail".
+    --- isEvaluateThreshold: if True, skips the band_map validation because
+        evaluate_thresholds receives data from one band only.
+    Output: None
     """
 
     # Checks that scores and answers have matching matrix dimensions.
@@ -41,21 +59,25 @@ def validate_evaluation_inputs(probabilities, true_labels, band_map):
     if not np.isin(true_labels, [0, 1]).all():
         raise ValueError("True labels must contain only 0 and 1.")
 
-    # Checks that every column index has a band assignment.
-    num_labels = probabilities.shape[1]
-    if set(band_map) != set(range(num_labels)):
-        raise ValueError("band_map must map every label column index.")
+    # These checks are irrelevant when evaluating one band's tau thresholds.
+    if not isEvaluateThreshold:
 
-    # Checks that all assigned band names are valid.
-    if any(band not in BANDS for band in band_map.values()):
-        raise ValueError("Band assignments must be head, torso or tail.")
+        # Checks that every column index has a band assignment.
+        num_labels = probabilities.shape[1]
+        if set(band_map) != set(range(num_labels)):
+            raise ValueError("band_map must map every label column index.")
+
+        # Checks that all assigned band names are valid.
+        if any(band not in BANDS for band in band_map.values()):
+            raise ValueError("Band assignments must be head, torso or tail.")
 
     return None
 
 
-
+## Section: Loading ##
 def save_tau_selection(
     chosen_taus,
+    tau_sweep,
     arm_name,
     objective,
     validation_filename,
@@ -67,6 +89,8 @@ def save_tau_selection(
 
     Inputs:
     --- chosen_taus: dictionary containing head, torso and tail thresholds.
+    --- tau_sweep: dictionary containing the Micro-F1 results for every tested
+        threshold, separately for head, torso and tail.
     --- arm_name: experiment name, such as "majority" or "scibert_full".
     --- objective: description of the threshold-selection rule.
     --- validation_filename: validation score filename inside output_directory.
@@ -101,8 +125,10 @@ def save_tau_selection(
         text=True,
     ).strip()
 
+
     # Collects the selected thresholds and their selection metadata.
     record = {
+        "run_datetime": RUN_DATATIME,
         "taus": {
             band: float(chosen_taus[band])
             for band in BANDS
@@ -112,6 +138,7 @@ def save_tau_selection(
         "validation_checksum": checksum.hexdigest(),
         "commit": commit,
         "has_tracked_changes": bool(tracked_changes),
+        "tau_sweep": tau_sweep,
     }
 
     # Saves the record using the filename required by the work plan.
@@ -119,7 +146,6 @@ def save_tau_selection(
         json.dump(record, file, indent=4)
 
     return None
-
 
 
 def save_test_results(
@@ -132,66 +158,99 @@ def save_test_results(
     """
     Saves test metrics as JSON and predictions as a compressed NumPy file.
 
+    Per-label TP, FP and FN counts are saved together with their label IDs.
+    Labels whose count is zero are omitted.
+
     Inputs:
     --- test_results: dictionary returned by evaluate_test, including predictions.
     --- arm_name: experiment name, such as "majority" or "scibert_full".
     --- output_directory: directory for saving the results.
     --- paper_ids: paper identifiers in prediction-row order.
     --- label_order: UAT IDs in prediction-column order.
+
     Output: None.
     """
 
-    # Separates predictions from metrics without modifying test_results.
+    # Separates the prediction matrix from the remaining test results.
     predictions = np.asarray(test_results["predictions"])
+
     metrics = {
-        key: value
-        for key, value in test_results.items()
-        if key != "predictions"
+        "run_datetime": RUN_DATATIME,
+        **{
+            key: value
+            for key, value in test_results.items()
+            if key != "predictions"
+        },
     }
 
     # Checks that identifiers match the prediction matrix.
     if predictions.shape != (len(paper_ids), len(label_order)):
-        raise ValueError("Prediction shape must match paper IDs and label order.")
+        raise ValueError(
+            "Prediction shape must match paper IDs and label order."
+        )
 
     if not np.isin(predictions, [0, 1]).all():
         raise ValueError("Predictions must contain only 0 and 1.")
 
-    # Creates the output directory and file paths.
+    # Converts per-label count arrays into readable label/count entries.
+    readable_counts = {}
+
+    for count_name, counts in metrics["per_label_counts"].items():
+        if len(counts) != len(label_order):
+            raise ValueError(
+                f"'{count_name}' count length must match label_order."
+            )
+
+        readable_counts[count_name] = []
+
+        for label_id, count in zip(label_order, counts):
+            if count > 0:
+                readable_counts[count_name].append({
+                    "label_id": str(label_id),
+                    "count": int(count),
+                })
+
+    metrics["per_label_counts"] = readable_counts
+
+    # Creates the output directory and output paths.
     output_dir = Path(output_directory)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     metrics_path = output_dir / f"test_results_{arm_name}.json"
     predictions_path = output_dir / f"test_predictions_{arm_name}.npz"
 
-    # Records the label order used by the per-label TP/FP/FN lists.
-    metrics["label_order"] = [str(label) for label in label_order]
-
-    # Saves metrics in a readable JSON file.
+    # Saves readable metrics as JSON.
     with metrics_path.open("w", encoding="utf-8") as file:
-        json.dump(metrics, file, indent=4, allow_nan=False)
+        json.dump(
+            metrics,
+            file,
+            indent=4,
+            allow_nan=False,
+        )
 
-    # Saves predictions and identifiers together for later comparisons.
+    # Saves predictions with their row and column identifiers.
     np.savez_compressed(
         predictions_path,
         predictions=predictions.astype(bool),
         paper_ids=np.asarray(paper_ids, dtype=str),
         label_order=np.asarray(label_order, dtype=str),
     )
+
     return None
 
 
+## Section: Evaluations ##
+
 def evaluate_thresholds(
-        probabilities,
-        true_labels,
-        tau_candidates=TAU_CANDIDATES,
+    probabilities,
+    true_labels,
+    tau_candidates=TAU_CANDIDATES,
 ):
     """
     Searches tau for a given band's validation scores.
     Maximises Micro-F1 over labels occurring in validation.
-    This function can be called independently of choose_tau, but it's not advised.
 
-    This function was originally implemented by Itai in SciBERT_experiment.py file.
-    Shai copied it here and modified it (Macro to Micro F1, for example).
+    This function can be called independently of choose_tau, but it is not advised.
 
     Assumptions:
     --- probabilities and true_labels have the same shape: [num_papers, num_band_labels].
@@ -204,32 +263,32 @@ def evaluate_thresholds(
     """
 
     # Sanity checks:
+    # Checks that at least one threshold was provided.
+    if len(tau_candidates) == 0:
+        raise ValueError("tau_candidates must not be empty.")
+
     # Converts input PyTorch tensors to NumPy arrays:
     if isinstance(probabilities, torch.Tensor):
         probabilities = probabilities.detach().cpu().numpy()
-
     if isinstance(true_labels, torch.Tensor):
         true_labels = true_labels.detach().cpu().numpy()
 
     probabilities = np.asarray(probabilities)
     true_labels = np.asarray(true_labels)
 
-    # Validates structure:
-    if probabilities.ndim != 2 or probabilities.shape != true_labels.shape:
-        raise ValueError("Scores and labels must have the same 2D shape.")
-
-    if len(tau_candidates) == 0:
-        raise ValueError("tau_candidates must not be empty.")
-
-    if probabilities.shape[0] == 0 or probabilities.shape[1] == 0:
-        raise ValueError("Expected papers and at least one label column.")
+    # Validates the score and answer matrices.
+    validate_evaluation_inputs(
+        probabilities,
+        true_labels,
+        isEvaluateThreshold=True,
+    )
 
     # Initialization:
     best_tau = float(tau_candidates[0])
     best_micro_f1 = -1.0
     tau_sweep = []
 
-    # Searches after the tau that maximizes Micro-F1 score
+    # Searches for the tau that maximizes Micro-F1.
     for tau in tau_candidates:
         predictions = probabilities >= tau
 
@@ -253,7 +312,6 @@ def evaluate_thresholds(
         if micro_f1 > best_micro_f1:
             best_tau = float(tau)
             best_micro_f1 = micro_f1
-
     return {
         "best_tau": best_tau,
         "best_micro_f1": best_micro_f1,
@@ -269,8 +327,9 @@ def choose_tau(val_probs, val_labels, band_map):
     --- val_probs: score matrix [num_papers, num_labels], NumPy or PyTorch.
     --- val_labels: binary answers with the same shape and ordering.
     --- band_map: dictionary mapping column index to head, torso or tail.
-    Output:
-    --- dictionary containing the chosen tau for each band.
+    Outputs:
+    --- chosen_taus: dictionary containing the chosen tau for each band.
+    --- tau_sweep: dictionary containing the evaluation results over the tau candidates
     """
 
     # Converts inputs to NumPy before processing the three bands.
@@ -294,6 +353,7 @@ def choose_tau(val_probs, val_labels, band_map):
     labels_present_in_validation = (val_labels == 1).any(axis=0)
 
     chosen_taus = {}
+    tau_sweep = {}
     for band in BANDS:
         # Selects this band's labels occurring in validation, keeping all papers.
         selected_columns = (
@@ -306,8 +366,14 @@ def choose_tau(val_probs, val_labels, band_map):
             true_labels=val_labels[:, selected_columns],
         )
         chosen_taus[band] = result["best_tau"]
+        tau_sweep[band] = result["tau_sweep"]
 
-    return chosen_taus
+        print(
+            f"{SHIFT}{band.upper()}: ",
+            f"best_tau={result['best_tau']}, best_micro_f1={result['best_micro_f1']}"
+        )
+
+    return chosen_taus, tau_sweep
 
 
 def evaluate_test(test_probs, test_labels, band_map, chosen_taus):
@@ -598,3 +664,6 @@ def paired_bootstrap(
         }
         for idx, band in enumerate(BANDS)
     }
+
+
+
