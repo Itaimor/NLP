@@ -26,14 +26,20 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 N_CANDIDATES = 50
 END_OF_TURN = "<end_of_turn>"
 
+# The 1-10 cap is the instruction Alkan et al. gave their LLM selector. Without it untouched
+# Gemma-3-4B emits ~17 of the 50 candidates per paper (4.3 gold); soft priors ("about 4 on
+# average") do not move it. Chosen on validation shortlists: scripts/gemma_prompt_dev.py,
+# results/gemma_select/prompt_dev/comparison.json.
 PROMPT_TEMPLATE = (
     "You are indexing an astronomy paper with the Unified Astronomy Thesaurus (UAT).\n"
-    "Read the title and abstract, then decide which of the candidate topics apply.\n\n"
+    "Read the title and abstract, then choose between 1 and 10 of the candidate topics: the "
+    "ones this paper should be indexed under.\n\n"
     "Title: {title}\n\n"
     "Abstract: {abstract}\n\n"
     "Candidate topics:\n{candidates}\n\n"
-    "Answer with the candidate topics that apply, most confident first, one per line, "
-    "copied exactly as written above. If none apply, answer NONE."
+    "Answer with the names of between 1 and 10 candidate topics, most confident first, one per "
+    "line, each copied exactly as written above (the topic name, not its number). Output only "
+    "the list, with no introduction or commentary. If none apply, answer NONE."
 )
 
 _LIST_MARKER_RE = re.compile(r"^\s*(?:[-*•]|\d+[.)])?\s*")

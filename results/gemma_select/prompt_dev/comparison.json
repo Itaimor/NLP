@@ -1,0 +1,219 @@
+{
+ "model": "google/gemma-3-4b-it",
+ "shortlist": "D:\\Users\\LOGIN\\Desktop\\Ilana\\NLP\\NLP\\results\\shortlists\\standin_tfidf_top50_val.jsonl",
+ "n_papers": 96,
+ "seed": 42,
+ "batch_size": 8,
+ "max_new_tokens": 160,
+ "code": {
+  "prior": {
+   "commit": "782beff136afbba93664cf9e0e8f6c4a5ce301dd",
+   "uncommitted_changes": [
+    "M scripts/gemma_select.py",
+    "?? scripts/gemma_prompt_dev.py"
+   ]
+  },
+  "cap10": {
+   "commit": "782beff136afbba93664cf9e0e8f6c4a5ce301dd",
+   "uncommitted_changes": [
+    "M scripts/gemma_select.py",
+    "?? scripts/gemma_prompt_dev.py"
+   ]
+  },
+  "strict": {
+   "commit": "782beff136afbba93664cf9e0e8f6c4a5ce301dd",
+   "uncommitted_changes": [
+    "M scripts/gemma_select.py",
+    "?? scripts/gemma_prompt_dev.py"
+   ]
+  },
+  "cap10n": {
+   "commit": "782beff136afbba93664cf9e0e8f6c4a5ce301dd",
+   "uncommitted_changes": [
+    "M scripts/gemma_select.py",
+    "?? scripts/gemma_prompt_dev.py"
+   ]
+  },
+  "cap10f": {
+   "commit": "782beff136afbba93664cf9e0e8f6c4a5ce301dd",
+   "uncommitted_changes": [
+    "M scripts/gemma_select.py",
+    "?? scripts/gemma_prompt_dev.py"
+   ]
+  },
+  "original": {
+   "commit": "782beff136afbba93664cf9e0e8f6c4a5ce301dd",
+   "uncommitted_changes": [
+    "M scripts/gemma_select.py",
+    "?? scripts/gemma_prompt_dev.py"
+   ]
+  }
+ },
+ "prompts": {
+  "prior": "You are indexing an astronomy paper with the Unified Astronomy Thesaurus (UAT).\nRead the title and abstract, then decide which of the candidate topics apply. Most of the candidates do not: a paper is indexed with about 4 topics on average, rarely more than 8.\n\nTitle: {title}\n\nAbstract: {abstract}\n\nCandidate topics:\n{candidates}\n\nAnswer with only the candidate topics that apply, most confident first, one per line, copied exactly as written above. If none apply, answer NONE.",
+  "cap10": "You are indexing an astronomy paper with the Unified Astronomy Thesaurus (UAT).\nRead the title and abstract, then choose between 1 and 10 of the candidate topics: the ones this paper should be indexed under.\n\nTitle: {title}\n\nAbstract: {abstract}\n\nCandidate topics:\n{candidates}\n\nAnswer with between 1 and 10 candidate topics, most confident first, one per line, copied exactly as written above. If none apply, answer NONE.",
+  "strict": "You are indexing an astronomy paper with the Unified Astronomy Thesaurus (UAT).\nRead the title and abstract, then decide which of the candidate topics apply. A topic applies only if the paper is substantially about it, the way a librarian would index it, not if it is merely mentioned. Most candidates do not apply: a paper is indexed with about 4 topics on average, rarely more than 8. Leave out a doubtful topic.\n\nTitle: {title}\n\nAbstract: {abstract}\n\nCandidate topics:\n{candidates}\n\nAnswer with only the candidate topics that apply, most confident first, one per line, copied exactly as written above. If none apply, answer NONE.",
+  "cap10n": "You are indexing an astronomy paper with the Unified Astronomy Thesaurus (UAT).\nRead the title and abstract, then choose between 1 and 10 of the candidate topics: the ones this paper should be indexed under.\n\nTitle: {title}\n\nAbstract: {abstract}\n\nCandidate topics:\n{candidates}\n\nAnswer with the names of between 1 and 10 candidate topics, most confident first, one per line, each copied exactly as written above (the topic name, not its number). If none apply, answer NONE.",
+  "cap10f": "You are indexing an astronomy paper with the Unified Astronomy Thesaurus (UAT).\nRead the title and abstract, then choose between 1 and 10 of the candidate topics: the ones this paper should be indexed under.\n\nTitle: {title}\n\nAbstract: {abstract}\n\nCandidate topics:\n{candidates}\n\nAnswer with the names of between 1 and 10 candidate topics, most confident first, one per line, each copied exactly as written above (the topic name, not its number). Output only the list, with no introduction or commentary. If none apply, answer NONE.",
+  "original": "You are indexing an astronomy paper with the Unified Astronomy Thesaurus (UAT).\nRead the title and abstract, then decide which of the candidate topics apply.\n\nTitle: {title}\n\nAbstract: {abstract}\n\nCandidate topics:\n{candidates}\n\nAnswer with the candidate topics that apply, most confident first, one per line, copied exactly as written above. If none apply, answer NONE."
+ },
+ "metrics": {
+  "prior": {
+   "papers": 96,
+   "parse_rate": 1.0,
+   "empty_output_rate": 0.0,
+   "off_list_rate_lines": 0.003993610223642172,
+   "papers_with_off_list": 0.052083333333333336,
+   "mean_picks": 12.989583333333334,
+   "median_picks": 12,
+   "first_pick_is_top1": 0.9166666666666666,
+   "adjacent_in_shown_order": 0.8601216333622936,
+   "hit_max_new_tokens_rate": 0.010416666666666666,
+   "mean_new_tokens": 71.67708333333333,
+   "micro_precision": 0.21090617481956697,
+   "micro_recall": 0.6957671957671958,
+   "micro_f1": 0.3236923076923077,
+   "gold_coverage_by_shortlist": 0.9021164021164021,
+   "emitted_over_gold_in_list": 3.656891495601173,
+   "mean_gold": 3.9375,
+   "tail_gold": 77,
+   "tail_coverage_by_shortlist": 0.7402597402597403,
+   "tail_precision": 0.12307692307692308,
+   "tail_recall": 0.5194805194805194,
+   "tail_f1": 0.19900497512437812,
+   "sec_per_paper": 1.300246072312196,
+   "peak_reserved_gb": 5.283203125
+  },
+  "cap10": {
+   "papers": 96,
+   "parse_rate": 0.9895833333333334,
+   "empty_output_rate": 0.0,
+   "off_list_rate_lines": 0.03466955579631636,
+   "papers_with_off_list": 0.17708333333333334,
+   "mean_picks": 9.28125,
+   "median_picks": 10,
+   "first_pick_is_top1": 0.8631578947368421,
+   "adjacent_in_shown_order": 0.7977386934673367,
+   "hit_max_new_tokens_rate": 0.0,
+   "mean_new_tokens": 55.34375,
+   "micro_precision": 0.26936026936026936,
+   "micro_recall": 0.6349206349206349,
+   "micro_f1": 0.37825059101654845,
+   "gold_coverage_by_shortlist": 0.9021164021164021,
+   "emitted_over_gold_in_list": 2.6129032258064515,
+   "mean_gold": 3.9375,
+   "tail_gold": 77,
+   "tail_coverage_by_shortlist": 0.7402597402597403,
+   "tail_precision": 0.18652849740932642,
+   "tail_recall": 0.4675324675324675,
+   "tail_f1": 0.26666666666666666,
+   "sec_per_paper": 0.7580386872092882,
+   "peak_reserved_gb": 5.283203125
+  },
+  "strict": {
+   "papers": 96,
+   "parse_rate": 1.0,
+   "empty_output_rate": 0.0,
+   "off_list_rate_lines": 0.005323868677905945,
+   "papers_with_off_list": 0.052083333333333336,
+   "mean_picks": 11.677083333333334,
+   "median_picks": 12,
+   "first_pick_is_top1": 0.90625,
+   "adjacent_in_shown_order": 0.8585365853658536,
+   "hit_max_new_tokens_rate": 0.0,
+   "mean_new_tokens": 63.989583333333336,
+   "micro_precision": 0.22925958965209633,
+   "micro_recall": 0.6798941798941799,
+   "micro_f1": 0.342895263509006,
+   "gold_coverage_by_shortlist": 0.9021164021164021,
+   "emitted_over_gold_in_list": 3.2873900293255134,
+   "mean_gold": 3.9375,
+   "tail_gold": 77,
+   "tail_coverage_by_shortlist": 0.7402597402597403,
+   "tail_precision": 0.14909090909090908,
+   "tail_recall": 0.5324675324675324,
+   "tail_f1": 0.23295454545454547,
+   "sec_per_paper": 1.159567082921664,
+   "peak_reserved_gb": 5.341796875
+  },
+  "cap10n": {
+   "papers": 96,
+   "parse_rate": 1.0,
+   "empty_output_rate": 0.0,
+   "off_list_rate_lines": 0.03502824858757062,
+   "papers_with_off_list": 0.2916666666666667,
+   "mean_picks": 8.895833333333334,
+   "median_picks": 9,
+   "first_pick_is_top1": 0.84375,
+   "adjacent_in_shown_order": 0.7994722955145118,
+   "hit_max_new_tokens_rate": 0.0,
+   "mean_new_tokens": 54.8125,
+   "micro_precision": 0.28337236533957844,
+   "micro_recall": 0.6402116402116402,
+   "micro_f1": 0.3928571428571428,
+   "gold_coverage_by_shortlist": 0.9021164021164021,
+   "emitted_over_gold_in_list": 2.504398826979472,
+   "mean_gold": 3.9375,
+   "tail_gold": 77,
+   "tail_coverage_by_shortlist": 0.7402597402597403,
+   "tail_precision": 0.18041237113402062,
+   "tail_recall": 0.45454545454545453,
+   "tail_f1": 0.25830258302583026,
+   "sec_per_paper": 0.8042995010813078,
+   "peak_reserved_gb": 5.283203125
+  },
+  "cap10f": {
+   "papers": 96,
+   "parse_rate": 1.0,
+   "empty_output_rate": 0.0,
+   "off_list_rate_lines": 0.030474040632054177,
+   "papers_with_off_list": 0.23958333333333334,
+   "mean_picks": 8.947916666666666,
+   "median_picks": 9,
+   "first_pick_is_top1": 0.8333333333333334,
+   "adjacent_in_shown_order": 0.7929226736566186,
+   "hit_max_new_tokens_rate": 0.0,
+   "mean_new_tokens": 46.71875,
+   "micro_precision": 0.2828870779976717,
+   "micro_recall": 0.6428571428571429,
+   "micro_f1": 0.3928860145513339,
+   "gold_coverage_by_shortlist": 0.9021164021164021,
+   "emitted_over_gold_in_list": 2.5190615835777126,
+   "mean_gold": 3.9375,
+   "tail_gold": 77,
+   "tail_coverage_by_shortlist": 0.7402597402597403,
+   "tail_precision": 0.175,
+   "tail_recall": 0.45454545454545453,
+   "tail_f1": 0.2527075812274368,
+   "sec_per_paper": 0.7289525071779887,
+   "peak_reserved_gb": 5.302734375
+  },
+  "original": {
+   "papers": 96,
+   "parse_rate": 1.0,
+   "empty_output_rate": 0.0,
+   "off_list_rate_lines": 0.01221001221001221,
+   "papers_with_off_list": 0.19791666666666666,
+   "mean_picks": 16.854166666666668,
+   "median_picks": 16,
+   "first_pick_is_top1": 0.9166666666666666,
+   "adjacent_in_shown_order": 0.8751642575558476,
+   "hit_max_new_tokens_rate": 0.14583333333333334,
+   "mean_new_tokens": 102.29166666666667,
+   "micro_precision": 0.1761433868974042,
+   "micro_recall": 0.753968253968254,
+   "micro_f1": 0.28557114228456915,
+   "gold_coverage_by_shortlist": 0.9021164021164021,
+   "emitted_over_gold_in_list": 4.744868035190616,
+   "mean_gold": 3.9375,
+   "tail_gold": 77,
+   "tail_coverage_by_shortlist": 0.7402597402597403,
+   "tail_precision": 0.11188811188811189,
+   "tail_recall": 0.6233766233766234,
+   "tail_f1": 0.18972332015810278,
+   "sec_per_paper": 1.5158329233527184,
+   "peak_reserved_gb": 5.244140625
+  }
+ },
+ "gpu": "NVIDIA GeForce RTX 3060 Ti"
+}

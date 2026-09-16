@@ -76,6 +76,13 @@ def load_papers(split_name):
     return papers
 
 
+def load_name_bands():
+    """topic name -> head/torso/tail under the primary (training-basis) band map."""
+    id_to_name = json.load(open(DATA_DIR / "id_to_name.json", encoding="utf-8"))
+    bands = json.load(open(DATA_DIR / "band_map_train.json", encoding="utf-8"))["bands"]
+    return {id_to_name[u]: band for u, band in bands.items() if u in id_to_name}
+
+
 @torch.no_grad()
 def generate_batch(model, tokenizer, prompts, stop_ids, max_new_tokens):
     """Left-padded batched greedy generation; returns (decoded texts, new-token counts)."""
@@ -116,27 +123,43 @@ def run_pass(model, tokenizer, records, papers, batch_size, stop_ids, max_new_to
     return results, (time.time() - t0) / len(records)
 
 
-def summarise(results, papers, with_gold):
+def summarise(results, papers, with_gold, bands=None):
     n = len(results)
     lines = sum(len(r["picks"]) + len(r["off_list"]) for r in results)
     off = sum(len(r["off_list"]) for r in results)
+    with_picks = [r for r in results if r["picks"]]
+    # Positional copying (Sun et al., EMNLP 2023): does the first pick sit at list position 1,
+    # and do consecutive picks walk down the shown list?
+    pairs = in_order = 0
+    for r in with_picks:
+        pos = [r["candidates_shown"].index(p) for p in r["picks"]]
+        pairs += len(pos) - 1
+        in_order += sum(1 for a, b in zip(pos, pos[1:]) if b > a)
     s = {
         "papers": n,
-        "parse_rate": sum(1 for r in results if r["picks"]) / n,
+        "parse_rate": len(with_picks) / n,
         "empty_output_rate": sum(1 for r in results if not r["picks"] and not r["off_list"]) / n,
         "off_list_rate_lines": off / lines if lines else 0.0,
         "papers_with_off_list": sum(1 for r in results if r["off_list"]) / n,
         "mean_picks": sum(len(r["picks"]) for r in results) / n,
+        "median_picks": sorted(len(r["picks"]) for r in results)[n // 2],
+        "first_pick_is_top1": sum(1 for r in with_picks if r["picks"][0] == r["candidates_shown"][0]) / len(with_picks) if with_picks else None,
+        "adjacent_in_shown_order": in_order / pairs if pairs else None,
         "hit_max_new_tokens_rate": sum(1 for r in results if r["hit_max_new_tokens"]) / n,
         "mean_new_tokens": sum(r["n_new_tokens"] for r in results) / n,
     }
     if with_gold:
         tp = fp = fn = 0; ceiling_hit = gold_total = 0; emitted = 0; gold_in_list = 0
+        t_tp = t_fp = t_gold = t_shown = 0
         for r in results:
             gold = set(papers[r["paper_id"]]["gold"]); picks = set(r["picks"]); shown = set(r["candidates_shown"])
             tp += len(gold & picks); fp += len(picks - gold); fn += len(gold - picks)
             gold_total += len(gold); ceiling_hit += len(gold & shown)
             emitted += len(r["picks"]); gold_in_list += len(gold & shown)
+            if bands:
+                tail = lambda names: {x for x in names if bands.get(x) == "tail"}
+                t_gold += len(tail(gold)); t_shown += len(tail(gold & shown))
+                t_tp += len(tail(gold & picks)); t_fp += len(tail(picks - gold))
         p = tp / (tp + fp) if tp + fp else 0.0; rc = tp / (tp + fn) if tp + fn else 0.0
         s.update({
             "micro_precision": p, "micro_recall": rc, "micro_f1": 2 * p * rc / (p + rc) if p + rc else 0.0,
@@ -144,6 +167,14 @@ def summarise(results, papers, with_gold):
             "emitted_over_gold_in_list": emitted / gold_in_list if gold_in_list else None,
             "mean_gold": gold_total / n,
         })
+        if bands:
+            tp_ = t_tp / (t_tp + t_fp) if t_tp + t_fp else 0.0; tr = t_tp / t_gold if t_gold else 0.0
+            s.update({
+                "tail_gold": t_gold,
+                "tail_coverage_by_shortlist": t_shown / t_gold if t_gold else None,
+                "tail_precision": tp_, "tail_recall": tr,
+                "tail_f1": 2 * tp_ * tr / (tp_ + tr) if tp_ + tr else 0.0,
+            })
     return s
 
 
@@ -190,16 +221,18 @@ def main():
     print(f"model loaded in {time.time() - t0:.0f}s", flush=True)
 
     with_gold = args.split == "validation"
+    bands = load_name_bands() if with_gold else None
     timing, results = {}, None
     for bs in [int(b) for b in args.batch_sizes.split(",")]:
         torch.cuda.reset_peak_memory_stats()
         results, s_per_paper = run_pass(model, tokenizer, records, papers, bs, stop_ids, args.max_new_tokens)
         timing[bs] = {"sec_per_paper": s_per_paper, "peak_reserved_gb": torch.cuda.max_memory_reserved() / 1024 ** 3}
-        summ = summarise(results, papers, with_gold)
+        summ = summarise(results, papers, with_gold, bands)
         print(f"batch {bs:2d}: {s_per_paper:.2f} s/paper, peak {timing[bs]['peak_reserved_gb']:.2f} GB | parse {summ['parse_rate']:.2f}, "
               f"off-list lines {summ['off_list_rate_lines']:.3f}, empty {summ['empty_output_rate']:.2f}, mean picks {summ['mean_picks']:.1f}"
               + (f" (gold {summ['mean_gold']:.1f}) | P {summ['micro_precision']:.3f} R {summ['micro_recall']:.3f} F1 {summ['micro_f1']:.3f}, "
-                 f"ceiling {summ['gold_coverage_by_shortlist']:.3f}, |y|/|gold&list| {summ['emitted_over_gold_in_list']:.2f}" if with_gold else ""),
+                 f"tail R {summ['tail_recall']:.3f} F1 {summ['tail_f1']:.3f}, ceiling {summ['gold_coverage_by_shortlist']:.3f}, "
+                 f"|y|/|gold&list| {summ['emitted_over_gold_in_list']:.2f}" if with_gold else ""),
               flush=True)
 
     with open(out_dir / f"{tag}.jsonl", "w", encoding="utf-8") as f:
@@ -209,7 +242,7 @@ def main():
         "arm": args.arm, "split": args.split, "model": args.model, "adapter": args.adapter,
         "shortlist": args.shortlist, "n_papers": len(records), "sampled": args.n is not None,
         "code": provenance, "max_new_tokens": args.max_new_tokens,
-        "timing_by_batch_size": timing, "metrics": summarise(results, papers, with_gold),
+        "timing_by_batch_size": timing, "metrics": summarise(results, papers, with_gold, bands),
         "gpu": torch.cuda.get_device_name(0),
     }
     with open(out_dir / f"{tag}_summary.json", "w", encoding="utf-8") as f:
