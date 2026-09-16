@@ -13,7 +13,7 @@ import torch
 
 # main.py is located inside the scripts directory:
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-RESULT_PATH = PROJECT_ROOT / "result"
+RESULT_PATH = PROJECT_ROOT / "results"
 
 # Hugging Face cache directory:
 os.environ.setdefault(
