@@ -173,8 +173,24 @@ class SciXDataset(Dataset):
         label_tensor = torch.zeros(self.num_labels, dtype=torch.float32)
         raw_labels = row.get(self.labels_col, [])
 
-        if isinstance(raw_labels, (list, tuple, set)):
+        # FIX: The HuggingFace dataset stores verified_uat_ids as numpy.ndarray in the DataFrame.
+        # Python's isinstance(np.ndarray, (list, tuple, set)) returned False, which previously
+        # caused all labels to be skipped and generated all-zero target vectors.
+        # We now check for any iterable sequence (excluding str/bytes) so that numpy.ndarray,
+        # lists, tuples, and sets are all correctly recognized and parsed.
+        if raw_labels is not None and hasattr(raw_labels, "__iter__") and not isinstance(raw_labels, (str, bytes)):
             for label in raw_labels:
+                # Labels may be numpy integers (int64/int32), Python ints, or string IDs.
+                # Cast to standard int first to match topic_to_idx keys loaded from label_order.json.
+                try:
+                    int_label = int(label)
+                    if int_label in self.topic_to_idx:
+                        label_tensor[self.topic_to_idx[int_label]] = 1.0
+                        continue
+                except (ValueError, TypeError):
+                    pass
+
+                # Fallback for string or raw representations:
                 if label in self.topic_to_idx:
                     label_tensor[self.topic_to_idx[label]] = 1.0
                 elif str(label) in self.topic_to_idx:
@@ -219,15 +235,17 @@ def build_dataloaders(
         tokenizer = AutoTokenizer.from_pretrained(SCIBERT_MODEL_NAME)
 
     if topic_to_idx is None:
-        # Extract unique topics across train and validation splits
+        # Extract unique topics across splits, casting numeric elements to standard int
         all_topics = set()
-        for labels in train_df["verified_uat_ids"]:
-            all_topics.update(labels)
-        for labels in val_df["verified_uat_ids"]:
-            all_topics.update(labels)
-        if test_df is not None:
-            for labels in test_df["verified_uat_ids"]:
-                all_topics.update(labels)
+        for df_split in (train_df, val_df, test_df):
+            if df_split is not None and "verified_uat_ids" in df_split:
+                for labels in df_split["verified_uat_ids"]:
+                    if labels is not None and hasattr(labels, "__iter__") and not isinstance(labels, (str, bytes)):
+                        for l in labels:
+                            try:
+                                all_topics.add(int(l))
+                            except (ValueError, TypeError):
+                                all_topics.add(l)
         topic_to_idx, _ = build_topic_mapping(all_topics)
 
     train_dataset = SciXDataset(

@@ -5,3 +5,5 @@
 .council/
 __pycache__/
 *.py[cod]
+*.log
+artifacts/
