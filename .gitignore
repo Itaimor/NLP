@@ -4,6 +4,8 @@
 __pycache__/
 *.py[cod]
 .DS_Store
+*.log
+artifacts/
 
 # Model weights and generated shortlists are reproducible from the scripts; too large for git
 results/**/adapter/

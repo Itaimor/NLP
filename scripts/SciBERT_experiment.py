@@ -304,8 +304,10 @@ def train_one_epoch(model, train_loader, optimizer, device, scheduler=None):
 
     model.train()
     total_loss = 0.0
+    total_batches = len(train_loader)
 
-    for input_ids, attention_mask, labels in train_loader:
+    # Track progress across batches with periodic flushed log updates
+    for batch_idx, (input_ids, attention_mask, labels) in enumerate(train_loader):
 
         input_ids = input_ids.to(device)
         attention_mask = attention_mask.to(device)
@@ -328,6 +330,16 @@ def train_one_epoch(model, train_loader, optimizer, device, scheduler=None):
             scheduler.step()
 
         total_loss += loss.item()
+
+        # Log batch progress every 100 batches and at the end of epoch so log monitors update in real time
+        if (batch_idx + 1) % 100 == 0 or (batch_idx + 1) == total_batches:
+            running_loss = total_loss / (batch_idx + 1)
+            pct = 100.0 * (batch_idx + 1) / total_batches
+            print(
+                f"  [Batch {batch_idx + 1:4d}/{total_batches} ({pct:5.1f}%)] "
+                f"Current Batch Loss: {loss.item():.4f} | Running Avg Loss: {running_loss:.4f}",
+                flush=True,
+            )
 
     return total_loss / max(1, len(train_loader))
 
@@ -543,6 +555,10 @@ def full_train_for_one_configuration(
             device=device,
         )
 
+        # Save per-epoch validation probabilities for Shai's evaluate.py (WORK_PLAN Stage 3)
+        val_probs_epoch_path = os.path.join(save_directory, f"val_probs_epoch_{epoch + 1}.pt")
+        torch.save(probabilities.detach().cpu(), val_probs_epoch_path)
+
         # Evaluates F1 across tau thresholds:
         threshold_eval = evaluate_thresholds(
             probabilities=probabilities,
@@ -560,9 +576,10 @@ def full_train_for_one_configuration(
             f1_str += f", Rare-F1={current_rare_f1:.4f}"
 
         print(
-            f"Epoch {epoch + 1}/{num_epochs}: "
+            f"\nEpoch {epoch + 1}/{num_epochs}: "
             f"train_loss={train_loss:.4f}, "
-            f"val_loss={validation_loss:.4f} | {f1_str}"
+            f"val_loss={validation_loss:.4f} | {f1_str}",
+            flush=True,
         )
 
         # Model selection decision:
@@ -631,7 +648,7 @@ def full_train_for_one_configuration(
 
         del checkpoint
 
-        print(f"Complete checkpoint saved after epoch {epoch + 1}.")
+        print(f"Complete checkpoint saved after epoch {epoch + 1}.", flush=True)
 
         # From the next epoch onward, perform normal training:
         validation_completed = True
@@ -696,8 +713,10 @@ def run_SciBERT_experiment(
     selection_metric: str = "f1",
     tau_candidates: Optional[List[float]] = None,
     test_bibcodes: Optional[List[str]] = None,
+    val_bibcodes: Optional[List[str]] = None,
     idx_to_topic: Optional[Dict[int, Any]] = None,
     export_candidates_path: Optional[str] = None,
+    export_val_candidates_path: Optional[str] = None,
     k_candidates: int = 50,
 ) -> Dict[str, Any]:
     """
@@ -844,7 +863,11 @@ def run_SciBERT_experiment(
             + (f", Rare-F1={results['test_rare_f1']:.4f}" if results['test_rare_f1'] else "")
         )
 
-        # 6. Export top-k candidates for Gemma (Handoff #4)
+        # Save test probabilities for Shai's evaluate.py (WORK_PLAN Stage 3)
+        torch.save(test_probs.detach().cpu(), os.path.join(arm_dir, "test_probabilities.pt"))
+        torch.save(test_labels.detach().cpu(), os.path.join(arm_dir, "test_labels.pt"))
+
+        # 6. Export top-k candidates for Gemma on Test set (Handoff #4)
         if export_candidates_path and test_bibcodes and idx_to_topic:
             export_top_k_candidates(
                 probabilities=test_probs,
@@ -853,7 +876,25 @@ def run_SciBERT_experiment(
                 output_path=export_candidates_path,
                 k=k_candidates,
             )
-            results["candidates_file"] = str(export_candidates_path)
+            results["test_candidates_file"] = str(export_candidates_path)
+
+    # 7. Export top-k candidates for Gemma on Validation set (Handoff #4)
+    if (
+        export_val_candidates_path
+        and val_bibcodes
+        and idx_to_topic
+        and "probabilities" in val_eval_results
+        and len(val_bibcodes) == len(val_eval_results["probabilities"])
+    ):
+        print(f"\nExporting top-{k_candidates} candidate lists for Validation split...")
+        export_top_k_candidates(
+            probabilities=val_eval_results["probabilities"],
+            bibcodes=val_bibcodes,
+            idx_to_topic=idx_to_topic,
+            output_path=export_val_candidates_path,
+            k=k_candidates,
+        )
+        results["val_candidates_file"] = str(export_val_candidates_path)
 
     # Save experiment summary JSON
     summary_path = os.path.join(arm_dir, "experiment_results.json")
@@ -862,3 +903,137 @@ def run_SciBERT_experiment(
 
     print(f"\nExperiment complete for SciBERT-{mode.upper()}. Summary saved to {summary_path}")
     return results
+
+
+if __name__ == "__main__":
+    import argparse
+    import sys
+    project_root = Path(__file__).resolve().parents[1]
+    sys.path.insert(0, str(project_root / "data"))
+    sys.path.insert(0, str(project_root / "scripts"))
+    from build_split import load_split
+
+    parser = argparse.ArgumentParser(description="Run SciBERT training and evaluation.")
+    parser.add_argument(
+        "--mode",
+        choices=["full", "lora"],
+        default="full",
+        help="Training mode: 'full' fine-tuning or 'lora' (default: 'full')",
+    )
+    parser.add_argument(
+        "--num-epochs",
+        type=int,
+        default=8,
+        help="Number of epochs to train (default: 8)",
+    )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=8,
+        help="Training batch size (default: 8)",
+    )
+    parser.add_argument(
+        "--eval-batch-size",
+        type=int,
+        default=16,
+        help="Validation/test batch size (default: 16)",
+    )
+    parser.add_argument(
+        "--lr",
+        type=float,
+        default=None,
+        help="Learning rate (default: 2e-5 for full, 1e-4 for lora)",
+    )
+    parser.add_argument(
+        "--save-dir",
+        type=str,
+        default="artifacts/scibert",
+        help="Root directory to save checkpoints and outputs (default: 'artifacts/scibert')",
+    )
+    parser.add_argument(
+        "--device",
+        type=str,
+        default=None,
+        help="Device to train on ('mps', 'cuda', 'cpu'; auto-detects if None)",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Run a 1-step verification pass on 32 papers to verify end-to-end functionality",
+    )
+    parser.add_argument(
+        "--force-restart",
+        action="store_true",
+        help="Ignore existing checkpoints and start training fresh from epoch 1",
+    )
+    args = parser.parse_args()
+
+    # 1. Device selection
+    if args.device:
+        device = torch.device(args.device)
+    elif torch.backends.mps.is_available():
+        device = torch.device("mps")
+    elif torch.cuda.is_available():
+        device = torch.device("cuda")
+    else:
+        device = torch.device("cpu")
+
+    print(f"\n[SciBERT Runner] Target device: {device}")
+    print("[SciBERT Runner] Loading Stage 1 split data from data/ ...")
+    split_data = load_split()
+    train_df = split_data["train_df"]
+    val_df = split_data["validation_df"]
+    test_df = split_data["test_df"]
+    topic_to_idx = split_data["topic_to_idx"]
+    idx_to_topic = split_data["idx_to_topic"]
+    rare_indices = split_data["rare_indices"]
+    num_labels = split_data["num_labels"]
+
+    if args.dry_run:
+        args.save_dir = os.path.join(args.save_dir, "dry_run")
+        print(f"[SciBERT Runner] Dry-run mode enabled: using isolated directory {args.save_dir} with 32 train, 16 val, 16 test papers.")
+        train_df = train_df.iloc[:32].reset_index(drop=True)
+        val_df = val_df.iloc[:16].reset_index(drop=True)
+        test_df = test_df.iloc[:16].reset_index(drop=True)
+        args.num_epochs = 1
+        args.force_restart = True
+
+    if args.force_restart:
+        arm_dir = os.path.join(args.save_dir, args.mode)
+        if os.path.exists(arm_dir):
+            import shutil
+            shutil.rmtree(arm_dir)
+            print(f"[SciBERT Runner] Fresh start: cleared previous checkpoints in {arm_dir}")
+
+    print("[SciBERT Runner] Building DataLoaders...")
+    dataloaders = build_dataloaders(
+        train_df=train_df,
+        val_df=val_df,
+        test_df=test_df,
+        topic_to_idx=topic_to_idx,
+        batch_size=args.batch_size,
+        eval_batch_size=args.eval_batch_size,
+    )
+
+    test_bibcodes = test_df["bibcode"].tolist()
+    val_bibcodes = val_df["bibcode"].tolist()
+    export_test_path = os.path.join(args.save_dir, args.mode, "gemma_candidates_test.json")
+    export_val_path = os.path.join(args.save_dir, args.mode, "gemma_candidates_validation.json")
+
+    results = run_SciBERT_experiment(
+        mode=args.mode,
+        dataloaders=dataloaders,
+        num_labels=num_labels,
+        device=device,
+        save_directory=args.save_dir,
+        num_epochs=args.num_epochs,
+        learning_rate=args.lr,
+        rare_indices=rare_indices,
+        selection_metric="f1",
+        test_bibcodes=test_bibcodes,
+        val_bibcodes=val_bibcodes,
+        idx_to_topic=idx_to_topic,
+        export_candidates_path=export_test_path,
+        export_val_candidates_path=export_val_path,
+        k_candidates=50,
+    )
