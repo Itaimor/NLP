@@ -77,7 +77,28 @@ def build_scibert(num_labels, mode="full", lora_configuration_params=None):
     return model
 
 
-def evaluate(model, data_loader, device):
+def compute_coverage_at_k(probabilities: torch.Tensor, true_labels: torch.Tensor, k: int = 50) -> float:
+    """
+    Computes validation/test Coverage@k (Recall@k): the fraction of true labels
+    that appear in the model's top-k predicted candidates.
+    Matches the Gemma candidate pool quality metric.
+    """
+    if not isinstance(probabilities, torch.Tensor):
+        probabilities = torch.tensor(probabilities, dtype=torch.float32)
+    if not isinstance(true_labels, torch.Tensor):
+        true_labels = torch.tensor(true_labels, dtype=torch.float32)
+
+    topk_indices = torch.topk(probabilities, k=min(k, probabilities.size(1)), dim=-1).indices
+    hits = 0
+    total_pos = 0
+    for i in range(len(true_labels)):
+        pos = set(torch.where(true_labels[i] > 0.5)[0].tolist())
+        total_pos += len(pos)
+        hits += len(pos.intersection(set(topk_indices[i].tolist())))
+    return hits / max(1, total_pos)
+
+
+def evaluate(model, data_loader, device, pos_weight=None):
     """
     Evaluates SciBERT without updating its parameters for the validation and test sets.
     This implementation supports both full fine-tuning and LoRA.
@@ -92,6 +113,7 @@ def evaluate(model, data_loader, device):
     --- model: transformers model or peft.PeftModel
     --- data_loader: torch.utils.data.DataLoader
     --- device: torch.device.
+    --- pos_weight: optional tensor of positive weights for BCEWithLogitsLoss
     Outputs:
     --- average_loss: float, mean batch loss
     --- probabilities: torch.Tensor with shape [num_samples, num_labels]
@@ -104,6 +126,12 @@ def evaluate(model, data_loader, device):
     all_probabilities = []
     all_labels = []
 
+    loss_fct = (
+        torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+        if pos_weight is not None
+        else torch.nn.BCEWithLogitsLoss()
+    )
+
     with torch.inference_mode():
         for input_ids, attention_mask, labels in data_loader:
             input_ids = input_ids.to(device)
@@ -113,16 +141,13 @@ def evaluate(model, data_loader, device):
             outputs = model(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
-                labels=labels,
             )
-
-            loss = outputs.loss
+            logits = outputs.logits
+            loss = loss_fct(logits, labels)
             total_loss += loss.item()
 
-            logits = outputs.logits
             probabilities = torch.sigmoid(logits)
             all_probabilities.append(probabilities.cpu())
-
             all_labels.append(labels.cpu())
 
     average_loss = total_loss / max(1, len(data_loader))
@@ -159,7 +184,7 @@ def evaluate_thresholds(
         - "tau_sweep": list of per-tau summary dicts
     """
     if tau_candidates is None:
-        tau_candidates = [round(0.10 + i * 0.05, 2) for i in range(17)]  # 0.10 to 0.90
+        tau_candidates = [0.01, 0.02, 0.05, 0.10, 0.15, 0.20, 0.30, 0.40, 0.50]
 
     if not isinstance(probabilities, torch.Tensor):
         probabilities = torch.tensor(probabilities, dtype=torch.float32)
@@ -193,7 +218,8 @@ def evaluate_thresholds(
 
         if rare_indices is not None and len(rare_indices) > 0:
             rare_f1 = f1[rare_indices].mean().item()
-            target_f1 = rare_f1
+            # If rare_f1 is 0.0, fallback to macro_f1 so model selection does not latch on 0.0
+            target_f1 = macro_f1 if rare_f1 == 0.0 else (0.5 * macro_f1 + 0.5 * rare_f1)
         else:
             rare_f1 = None
             target_f1 = macro_f1
@@ -282,7 +308,7 @@ def export_top_k_candidates(
 
 ### Subsection: Training ###
 
-def train_one_epoch(model, train_loader, optimizer, device, scheduler=None):
+def train_one_epoch(model, train_loader, optimizer, device, scheduler=None, pos_weight=None):
     """
     Trains SciBert for one epoch and return the average loss.
     This implementation works identically whether model's mode is full or lora.
@@ -298,6 +324,7 @@ def train_one_epoch(model, train_loader, optimizer, device, scheduler=None):
     --- optimizer: torch.optim.Optimizer
     --- device: torch.device.
     --- scheduler: optional LR scheduler, stepped once per batch
+    --- pos_weight: optional tensor of positive class weights to counter extreme label imbalance
     Output:
     --- avg_loss: float, mean loss over the epoch
     """
@@ -305,6 +332,12 @@ def train_one_epoch(model, train_loader, optimizer, device, scheduler=None):
     model.train()
     total_loss = 0.0
     total_batches = len(train_loader)
+
+    loss_fct = (
+        torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+        if pos_weight is not None
+        else torch.nn.BCEWithLogitsLoss()
+    )
 
     # Track progress across batches with periodic flushed log updates
     for batch_idx, (input_ids, attention_mask, labels) in enumerate(train_loader):
@@ -318,9 +351,9 @@ def train_one_epoch(model, train_loader, optimizer, device, scheduler=None):
         outputs = model(
             input_ids=input_ids,
             attention_mask=attention_mask,
-            labels=labels,
         )
-        loss = outputs.loss
+        logits = outputs.logits
+        loss = loss_fct(logits, labels)
 
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
@@ -385,7 +418,8 @@ def full_train_for_one_configuration(
     save_directory,
     num_epochs=8,
     scheduler=None,
-    selection_metric="f1",
+    selection_metric="coverage",
+    pos_weight=None,
     tau_candidates=None,
     rare_indices=None,
 ):
@@ -443,7 +477,8 @@ def full_train_for_one_configuration(
 
     # Variables used for selecting the best model:
     best_validation_loss = float("inf")
-    best_target_score = -1.0 if selection_metric == "f1" else float("inf")
+    best_target_score = -1.0 if selection_metric in ["f1", "coverage"] else float("inf")
+    best_coverage_50 = 0.0
     best_model_state = None
     best_evaluation_results = None
     best_epoch = None
@@ -502,8 +537,11 @@ def full_train_for_one_configuration(
             best_tau = best_artifacts.get("best_tau")
             best_macro_f1 = best_artifacts.get("best_macro_f1")
             best_rare_f1 = best_artifacts.get("best_rare_f1")
+            best_coverage_50 = best_artifacts.get("best_coverage_50", 0.0)
 
-            if selection_metric == "f1":
+            if selection_metric == "coverage":
+                best_target_score = best_artifacts.get("best_target_score", best_coverage_50)
+            elif selection_metric == "f1":
                 best_target_score = best_artifacts.get("best_target_score", best_macro_f1 if best_macro_f1 is not None else -1.0)
             else:
                 best_target_score = best_validation_loss
@@ -525,6 +563,7 @@ def full_train_for_one_configuration(
                 optimizer=optimizer,
                 device=device,
                 scheduler=scheduler,
+                pos_weight=pos_weight,
             )
 
         # Saves the current training state before validation.
@@ -540,6 +579,7 @@ def full_train_for_one_configuration(
             "best_epoch": best_epoch,
             "best_validation_loss": best_validation_loss,
             "best_target_score": best_target_score,
+            "best_coverage_50": best_coverage_50,
             "best_tau": best_tau,
         }
 
@@ -553,11 +593,15 @@ def full_train_for_one_configuration(
             model=model,
             data_loader=validation_loader,
             device=device,
+            pos_weight=pos_weight,
         )
 
         # Save per-epoch validation probabilities for Shai's evaluate.py (WORK_PLAN Stage 3)
         val_probs_epoch_path = os.path.join(save_directory, f"val_probs_epoch_{epoch + 1}.pt")
         torch.save(probabilities.detach().cpu(), val_probs_epoch_path)
+
+        # Compute Coverage@50 matching Gemma shortlist objective
+        current_coverage_50 = compute_coverage_at_k(probabilities, labels, k=50)
 
         # Evaluates F1 across tau thresholds:
         threshold_eval = evaluate_thresholds(
@@ -571,7 +615,7 @@ def full_train_for_one_configuration(
         current_tau = threshold_eval["best_tau"]
         current_target_score = threshold_eval["best_target_f1"]
 
-        f1_str = f"Macro-F1={current_macro_f1:.4f} (at tau={current_tau})"
+        f1_str = f"Coverage@50={current_coverage_50*100:.2f}%, Macro-F1={current_macro_f1:.4f} (at tau={current_tau})"
         if current_rare_f1 is not None:
             f1_str += f", Rare-F1={current_rare_f1:.4f}"
 
@@ -583,18 +627,23 @@ def full_train_for_one_configuration(
         )
 
         # Model selection decision:
-        if selection_metric == "f1":
+        if selection_metric == "coverage":
+            is_best = current_coverage_50 > best_target_score
+        elif selection_metric == "f1":
             is_best = current_target_score > best_target_score
         else:
             is_best = validation_loss < best_validation_loss
 
         if is_best:
-            if selection_metric == "f1":
+            if selection_metric == "coverage":
+                best_target_score = current_coverage_50
+            elif selection_metric == "f1":
                 best_target_score = current_target_score
             else:
                 best_target_score = validation_loss
 
             best_validation_loss = validation_loss
+            best_coverage_50 = current_coverage_50
             best_epoch = epoch
             best_tau = current_tau
             best_macro_f1 = current_macro_f1
@@ -606,6 +655,7 @@ def full_train_for_one_configuration(
                 "best_tau": best_tau,
                 "best_macro_f1": best_macro_f1,
                 "best_rare_f1": best_rare_f1,
+                "best_coverage_50": best_coverage_50,
                 "tau_sweep": threshold_eval["tau_sweep"],
             }
 
@@ -619,6 +669,7 @@ def full_train_for_one_configuration(
             best_artifacts = {
                 "best_validation_loss": best_validation_loss,
                 "best_target_score": best_target_score,
+                "best_coverage_50": best_coverage_50,
                 "best_tau": best_tau,
                 "best_macro_f1": best_macro_f1,
                 "best_rare_f1": best_rare_f1,
@@ -639,6 +690,7 @@ def full_train_for_one_configuration(
             "validation_loss": validation_loss,
             "best_validation_loss": best_validation_loss,
             "best_target_score": best_target_score,
+            "best_coverage_50": best_coverage_50,
             "best_epoch": best_epoch,
             "best_tau": best_tau,
         })
@@ -671,6 +723,7 @@ def full_train_for_one_configuration(
         "best_tau": best_tau,
         "best_macro_f1": best_macro_f1,
         "best_rare_f1": best_rare_f1,
+        "best_coverage_50": best_coverage_50,
     }
 
     # Saves the selected model separately from the resume checkpoint:
@@ -689,6 +742,7 @@ def full_train_for_one_configuration(
     print(
         f"\nBest model selected at epoch {best_epoch + 1}: "
         f"val_loss={best_validation_loss:.4f}, "
+        f"Coverage@50={best_coverage_50*100:.2f}%, "
         f"Macro-F1={best_macro_f1:.4f} (tau={best_tau})"
     )
 
@@ -708,9 +762,10 @@ def run_SciBERT_experiment(
     save_directory: str = "artifacts/scibert",
     num_epochs: int = 8,
     learning_rate: Optional[float] = None,
+    pos_weight: Optional[float] = 30.0,
     lora_params: Optional[dict] = None,
     rare_indices: Optional[List[int]] = None,
-    selection_metric: str = "f1",
+    selection_metric: str = "coverage",
     tau_candidates: Optional[List[float]] = None,
     test_bibcodes: Optional[List[str]] = None,
     val_bibcodes: Optional[List[str]] = None,
@@ -724,9 +779,9 @@ def run_SciBERT_experiment(
 
     Steps:
     1. Sets up device (MPS / CUDA / CPU) and model architecture.
-    2. Configures AdamW optimizer and linear decay scheduler.
-    3. Runs full_train_for_one_configuration with checkpointing.
-    4. Evaluates winning model on test set with the tuned validation tau.
+    2. Configures AdamW optimizer (with differential LR for full mode) and linear decay scheduler.
+    3. Runs full_train_for_one_configuration with checkpointing and pos_weight loss.
+    4. Evaluates winning model on test set with the tuned validation tau and computes Coverage@k.
     5. Optionally exports top-50 candidate lists for Gemma (Stage 4).
 
     Inputs:
@@ -737,9 +792,10 @@ def run_SciBERT_experiment(
     --- save_directory: directory path for saving checkpoints and best models
     --- num_epochs: int, training epochs (default 8)
     --- learning_rate: float, defaults to 2e-5 for full, 1e-4 for LoRA
+    --- pos_weight: float or None, positive class weight for BCE loss (default 30.0)
     --- lora_params: LoRA hyperparameters dict (if mode="lora")
     --- rare_indices: list of column indices corresponding to rare topics
-    --- selection_metric: "f1" or "loss"
+    --- selection_metric: "coverage", "f1", or "loss"
     --- tau_candidates: thresholds to test
     --- test_bibcodes: list of test set bibcodes for candidate export
     --- idx_to_topic: mapping from column index to UAT ID
@@ -790,7 +846,25 @@ def run_SciBERT_experiment(
     model.to(device)
 
     # 3. Optimizer & Scheduler
-    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=0.01)
+    if mode == "full":
+        head_lr = max(learning_rate * 5, 1e-4)
+        backbone_params = []
+        head_params = []
+        for name, param in model.named_parameters():
+            if not param.requires_grad:
+                continue
+            if "classifier" in name or "score" in name:
+                head_params.append(param)
+            else:
+                backbone_params.append(param)
+        optimizer_grouped_parameters = [
+            {"params": backbone_params, "lr": learning_rate, "weight_decay": 0.01},
+            {"params": head_params, "lr": head_lr, "weight_decay": 0.01},
+        ]
+        optimizer = torch.optim.AdamW(optimizer_grouped_parameters)
+        print(f"[SciBERT Setup] Differential LR: backbone={learning_rate:.2e}, classifier head={head_lr:.2e}")
+    else:
+        optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=0.01)
 
     train_loader = dataloaders["train"]
     val_loader = dataloaders["validation"]
@@ -802,6 +876,11 @@ def run_SciBERT_experiment(
         num_warmup_steps=warmup_steps,
         num_training_steps=total_training_steps,
     )
+
+    pos_weight_tensor = None
+    if pos_weight is not None:
+        pos_weight_tensor = torch.tensor([float(pos_weight)], device=device)
+        print(f"[SciBERT Setup] Using pos_weight={pos_weight:.1f} for BCEWithLogitsLoss to counter label imbalance.")
 
     start_time = time.time()
 
@@ -817,6 +896,7 @@ def run_SciBERT_experiment(
         num_epochs=num_epochs,
         scheduler=scheduler,
         selection_metric=selection_metric,
+        pos_weight=pos_weight_tensor,
         tau_candidates=tau_candidates,
         rare_indices=rare_indices,
     )
@@ -828,11 +908,14 @@ def run_SciBERT_experiment(
         "mode": mode,
         "device": str(device),
         "learning_rate": learning_rate,
+        "pos_weight": pos_weight,
+        "selection_metric": selection_metric,
         "num_epochs": num_epochs,
         "training_time_seconds": round(elapsed_time, 2),
         "best_epoch": training_info["original_best_epoch"],
         "best_val_loss": round(best_val_loss, 4),
         "best_tau": best_tau,
+        "val_coverage_50": training_info.get("best_coverage_50"),
         "val_macro_f1": training_info.get("best_macro_f1"),
         "val_rare_f1": training_info.get("best_rare_f1"),
     }
@@ -844,6 +927,7 @@ def run_SciBERT_experiment(
             model=model,
             data_loader=dataloaders["test"],
             device=device,
+            pos_weight=pos_weight_tensor,
         )
 
         test_eval = evaluate_thresholds(
@@ -853,12 +937,16 @@ def run_SciBERT_experiment(
             rare_indices=rare_indices,
         )
 
+        test_coverage_50 = compute_coverage_at_k(test_probs, test_labels, k=k_candidates)
+
         results["test_loss"] = round(test_loss, 4)
+        results["test_coverage_50"] = round(test_coverage_50, 4)
         results["test_macro_f1"] = test_eval["best_macro_f1"]
         results["test_rare_f1"] = test_eval["best_rare_f1"]
 
         print(
             f"Test Results: loss={test_loss:.4f}, "
+            f"Coverage@50={test_coverage_50*100:.2f}%, "
             f"Macro-F1={results['test_macro_f1']:.4f}"
             + (f", Rare-F1={results['test_rare_f1']:.4f}" if results['test_rare_f1'] else "")
         )
@@ -945,6 +1033,19 @@ if __name__ == "__main__":
         help="Learning rate (default: 2e-5 for full, 1e-4 for lora)",
     )
     parser.add_argument(
+        "--pos-weight",
+        type=float,
+        default=30.0,
+        help="Positive class weight for BCE loss to counter 432:1 imbalance (default: 30.0)",
+    )
+    parser.add_argument(
+        "--selection-metric",
+        type=str,
+        choices=["coverage", "f1", "loss"],
+        default="coverage",
+        help="Metric for selecting best checkpoint: 'coverage' (Coverage@50), 'f1', or 'loss' (default: 'coverage')",
+    )
+    parser.add_argument(
         "--save-dir",
         type=str,
         default="artifacts/scibert",
@@ -1028,8 +1129,9 @@ if __name__ == "__main__":
         save_directory=args.save_dir,
         num_epochs=args.num_epochs,
         learning_rate=args.lr,
+        pos_weight=args.pos_weight,
         rare_indices=rare_indices,
-        selection_metric="f1",
+        selection_metric=args.selection_metric,
         test_bibcodes=test_bibcodes,
         val_bibcodes=val_bibcodes,
         idx_to_topic=idx_to_topic,
