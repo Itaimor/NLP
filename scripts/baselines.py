@@ -5,7 +5,13 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.multiclass import OneVsRestClassifier
+
 from evaluate import choose_tau, save_tau_selection, evaluate_test, save_test_results
+from scibert_dataset import clean_astronomy_text
+
 
 
 ## Shared function for both baselines ##
@@ -136,10 +142,6 @@ def run_majority_baseline(
     Output: None
     """
 
-    # Sanity check:
-    if len(train_df) == 0:
-        raise ValueError("Baselines: train_df is empty.")
-
     # Creates the directory:
     print("Builds directory ...", end="")
     output_directory = Path(save_directory)
@@ -247,7 +249,250 @@ def run_majority_baseline(
 ## TF-IDF + Logistic Regression baseline ##
 
 
+def build_paper_texts(df):
+    """
+    Cleans and combines each paper's title and abstract.
+    Uses the same logic as Itai's original implementation in
+    scibert_dataset.SciXDataset.__getitem__().
+
+    Input:
+    --- df: DataFrame containing title and abstract columns.
+    Output:
+    --- list of cleaned texts in the original row order.
+    """
+
+    required_columns = {"title", "abstract"}
+    missing_columns = required_columns - set(df.columns)
+
+    if missing_columns:
+        raise ValueError(
+            f"DataFrame is missing required columns: {sorted(missing_columns)}"
+        )
+
+    texts = []
+
+    for title, abstract in zip(df["title"], df["abstract"]):
+        clean_title = clean_astronomy_text(title)
+        clean_abstract = clean_astronomy_text(abstract)
+
+        if clean_title and clean_abstract:
+            full_text = f"{clean_title}\n{clean_abstract}"
+        elif clean_title:
+            full_text = clean_title
+        else:
+            full_text = clean_abstract
+
+        texts.append(full_text)
+
+    return texts
 
 
 
+def run_tfidf_logistic_regression_baseline(
+        train_df,
+        validation_df,
+        test_df,
+        label_order,
+        train_band_map,
+        save_directory,
+):
+    """
+    Runs the complete TF-IDF + Logistic Regression baseline.
+    TF-IDF and Logistic Regression are fitted using the training set only.
+    The trained model produces one probability per paper and label for
+    validation and test.
 
+    Inputs:
+    --- train_df: training DataFrame used to fit TF-IDF and Logistic Regression.
+    --- validation_df: validation DataFrame used to select thresholds.
+    --- test_df: test DataFrame used only for final evaluation.
+    --- label_order: UAT IDs defining the label-column order.
+    --- train_band_map: dictionary mapping each label-column index to
+        "head", "torso" or "tail".
+    --- save_directory: directory in which baseline artifacts are saved.
+    Output: None.
+    """
+
+    # Creates the output directory:
+    print("Builds directory ...", end="")
+    output_directory = Path(save_directory)
+    output_directory.mkdir(parents=True, exist_ok=True)
+    print(" Done.")
+
+    # Builds title + abstract texts while preserving DataFrame row order:
+    print("Builds paper texts ...", end="")
+    train_texts = build_paper_texts(train_df)
+    validation_texts = build_paper_texts(validation_df)
+    test_texts = build_paper_texts(test_df)
+    print(" Done.")
+
+    # Fits TF-IDF on train only and transforms validation and test:
+    # The parameters were chosen due to train's statistics analysis.
+    print("Fits TF-IDF vectorizer ...", end="")
+    vectorizer = TfidfVectorizer(
+        lowercase=True,
+        strip_accents='unicode',
+        ngram_range=(1, 2),  # Uses both unigrams and adjacent bigrams
+        min_df=3,  # Keeps feature only if it appears at least three papers
+        max_df=0.95,
+        sublinear_tf=True,
+        # Common practice, TF(word) = 1+log(#word),
+        # hence the 10th appearance in *the same paper* is not 10 times more important
+        max_features=None,
+        dtype=np.float32,
+    )
+    train_features = vectorizer.fit_transform(train_texts)  # Trains and applies
+    validation_features = vectorizer.transform(validation_texts)  # Applies
+    test_features = vectorizer.transform(test_texts)  # Applies
+    print(" Done.")
+
+    # Builds train correct-answer matrix in label_order.
+    train_answers_df = build_true_labels_dataframe_for_evaluation(
+        train_df,
+        label_order,
+    )
+    train_labels = train_answers_df.iloc[:, 1:].to_numpy() # removes "id" column
+
+    # Sanity checks before training LR:
+    # Every label must contain at least one positive training example.
+    labels_without_train_examples = np.flatnonzero(
+        train_labels.sum(axis=0) == 0
+    )
+    if len(labels_without_train_examples) > 0:
+        raise ValueError(
+            f"{len(labels_without_train_examples)} labels have no "
+            "positive training examples."
+        )
+    # Checks dimensions:
+    if train_features.shape[0] != train_labels.shape[0]:
+        raise ValueError(
+            "train_features and train_labels must contain the same "
+            "number of papers."
+        )
+
+    if train_labels.shape[1] != len(label_order):
+        raise ValueError(
+            "The number of train-label columns must match label_order."
+        )
+
+    # Trains one binary Logistic Regression classifier per label.from
+    # OneVsRestClassifier splits the multi-label task to 1864 binary tasks.
+    #   train_features: [15,822 papers, TF-IDF features].
+    #   train_labels: [15,822 papers, 1,864 labels].
+    #   OneVsRest trains one binary LR per label using train_labels[:, i].
+    print("Trains multi-label logistic regression classifier ...", end="")
+    classifier = OneVsRestClassifier(
+        LogisticRegression(
+            C=1.0,
+            solver="liblinear",
+            max_iter=1000,
+            random_state=42,
+        ),
+        n_jobs=1,
+    )
+    classifier.fit(train_features, train_labels)
+    print(" Done.")
+
+    # Produces one probability per paper and label.
+    print("Calculates validation and test probabilities ...", end="")
+
+    validation_scores = np.asarray(
+        classifier.predict_proba(validation_features),
+        dtype=np.float32,
+    )
+    test_scores = np.asarray(
+        classifier.predict_proba(test_features),
+        dtype=np.float32,
+    )
+    print(" Done.")
+
+    # Wraps scores with paper IDs and label-ID column names.
+    validation_score_df = build_score_dataframe_for_evaluation(
+        validation_df,
+        validation_scores,
+        label_order,
+    )
+    test_score_df = build_score_dataframe_for_evaluation(
+        test_df,
+        test_scores,
+        label_order,
+    )
+
+    # Saves the standard score tables required by the work plan.
+    validation_filename = "tfidf_lr_val.parquet"
+    test_filename = "tfidf_lr_test.parquet"
+
+    print(f"Saving {validation_filename} ...", end="")
+    validation_score_df.to_parquet(
+        output_directory / validation_filename,
+        index=False,
+    )
+    print(" Done.")
+
+    print(f"Saving {test_filename} ...", end="")
+    test_score_df.to_parquet(
+        output_directory / test_filename,
+        index=False,
+    )
+    print(" Done.")
+
+    # Builds validation correct answers.
+    validation_answers_df = (
+        build_true_labels_dataframe_for_evaluation(
+            validation_df,
+            label_order,
+        )
+    )
+    validation_labels = validation_answers_df.iloc[:, 1:].to_numpy()
+
+    # Selects one threshold per band using validation only.
+    print("Calling choose_tau() from evaluate.py.")
+    chosen_taus, tau_sweep = choose_tau(
+        val_probs=validation_scores,
+        val_labels=validation_labels,
+        band_map=train_band_map,
+    )
+
+    # Saves the selected thresholds and validation-file fingerprint.
+    print("Saving selected validation TAUs ...", end="")
+    save_tau_selection(
+        chosen_taus=chosen_taus,
+        tau_sweep=tau_sweep,
+        arm_name="tfidf_lr",
+        objective=(
+            "Maximise each band's validation Micro-F1 "
+            "over the fixed TAU candidates."
+        ),
+        validation_filename=validation_filename,
+        output_directory=output_directory,
+    )
+    print(" Done.")
+
+    # Builds test correct answers.
+    test_answers_df = build_true_labels_dataframe_for_evaluation(
+        test_df,
+        label_order,
+    )
+    test_labels = test_answers_df.iloc[:, 1:].to_numpy()
+
+    # Applies validation-selected thresholds to test exactly once:
+    print("Calling evaluate_test() from evaluate.py.")
+    test_results = evaluate_test(
+        test_probs=test_scores,
+        test_labels=test_labels,
+        band_map=train_band_map,
+        chosen_taus=chosen_taus,
+    )
+
+    # Saves final metrics and binary predictions:
+    print("Saving test results ...", end="")
+    save_test_results(
+        test_results=test_results,
+        arm_name="tfidf_lr",
+        output_directory=output_directory,
+        paper_ids=test_df["bibcode"].tolist(),
+        label_order=label_order,
+    )
+    print(" Done.")
+
+    return None

@@ -10,7 +10,6 @@ import numpy as np
 import pandas as pd
 import torch
 
-
 # main.py is located inside the scripts directory:
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 RESULT_PATH = PROJECT_ROOT / "results"
@@ -32,7 +31,7 @@ from iterstrat.ml_stratifiers import MultilabelStratifiedShuffleSplit
 # Project imports:
 from data.build_split import load_split
 from EDA_Analysis import EDA_Analysis
-from baselines import run_majority_baseline
+from baselines import run_majority_baseline, run_tfidf_logistic_regression_baseline
 
 # Global variables:
 SEED = 42
@@ -332,7 +331,19 @@ def main(chosen_seed):
 
 
     # Runs TF-IDF + Logistic Regression:
-    # TODO
+    print("\nRuns TF-IDF + Logistic Regression Baseline:")
+    print("--------------------------------------------")
+    majority_path = RESULT_PATH / "tfidf_logistic_regression"
+    run_tfidf_logistic_regression_baseline(
+        train_df=datasets_dict["train"],
+        validation_df=datasets_dict["validation"],
+        test_df=datasets_dict["test"],
+        label_order=label_order,
+        train_band_map=train_band_map,
+        save_directory=majority_path,
+    )
+
+    print("\nTF-IDF + Logistic Regression Baseline is completed.")
 
     # Runs SciBert - full
     # TODO

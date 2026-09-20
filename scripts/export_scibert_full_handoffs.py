@@ -211,6 +211,37 @@ def main():
     test_score_df.to_parquet(test_parquet_artifacts, index=False)
 
     # -------------------------------------------------------------
+    # TASK 2b: Export Handoff 4 JSONL (Validation and Test)
+    # -------------------------------------------------------------
+    print("\n[SciBERT Handoffs] Exporting Handoff 4 JSONL shortlists (val & test)...")
+    for split_df, probs_tensor, split_name in [
+        (val_df, val_probs_tensor, "val"),
+        (test_df, test_probs_tensor, "test"),
+    ]:
+        scores_b, top_idx_b = torch.topk(probs_tensor, k=50, dim=1)
+        scores_np = scores_b.numpy()
+        top_np = top_idx_b.numpy()
+        bibcodes = split_df["bibcode"].tolist()
+
+        jsonl_lines = []
+        for i, bibcode in enumerate(bibcodes):
+            candidate_ids = [idx_to_topic[int(t)] for t in top_np[i]]
+            candidate_names = [id_to_name.get(cid, str(cid)) for cid in candidate_ids]
+            score_vals = [round(float(s), 5) for s in scores_np[i]]
+            entry = {
+                "paper_id": bibcode,
+                "candidate_ids": candidate_ids,
+                "candidate_names": candidate_names,
+                "scores": score_vals,
+            }
+            jsonl_lines.append(json.dumps(entry))
+
+        jsonl_path = arm_dir / f"scibert_full_top50_{split_name}.jsonl"
+        with open(jsonl_path, "w") as f:
+            f.write("\n".join(jsonl_lines) + "\n")
+        print(f"Saved {jsonl_path} ({jsonl_path.stat().st_size / (1024*1024):.1f} MB)")
+
+    # -------------------------------------------------------------
     # TASK 3: Official Scoring via Shai's evaluate.py
     # -------------------------------------------------------------
     print("\n[SciBERT Handoffs] Running official evaluation via evaluate.py...")
