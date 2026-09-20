@@ -10,13 +10,17 @@ tables in the handoff-4 format the Gemma scripts read (WORK_PLAN.md §6): the 50
 same ones the exporter's torch.topk(k=50) picks, in score order, up to float ties.
 
 The training list (handoff 4b) is NOT derivable here: it needs SciBERT's checkpoint run over the
-15,822 training papers, and the checkpoint lives only in Itai's artifacts/.
+15,822 training papers. Itai exports it to results/scibert_full/scibert_full_top50_train.jsonl
+(tracked since e037005) under his exporter's schema — key "candidate_names" and ["NONE"] for an
+empty target — so when that file exists this script also writes a copy in the schema the Gemma
+scripts read ("candidates", [] for empty), never touching his bytes.
 
-Provenance of a list = this script + the git blob of the parquet it was read from (printed).
+Provenance of a list = this script + the git blob of the file it was read from (printed).
 
 Outputs (results/shortlists/, git-ignored, ~1 s to rebuild):
-    scibert_full_top50_val.jsonl   {"paper_id", "candidates": [50 names, SciBERT score order], "scores"}
-    scibert_full_top50_test.jsonl  same
+    scibert_full_top50_val.jsonl    {"paper_id", "candidates": [50 names, SciBERT score order], "scores"}
+    scibert_full_top50_test.jsonl   same
+    scibert_full_top50_train.jsonl  same + "gold_in_list" (gold ∩ candidates in score order, [] if none)
 """
 
 import sys
@@ -85,6 +89,27 @@ def main():
         print(f"{out.name}: {len(recs)} lists from {parquet.relative_to(PROJECT_ROOT).as_posix()} "
               f"(blob {git_blob(parquet)[:12] or 'untracked'}); max prob {P.max():.3f}, "
               f"median row-max {np.median(P.max(axis=1)):.3f}", flush=True)
+
+    # handoff 4b: Itai's exported training list, re-keyed for gemma_train.py
+    src = RESULTS_DIR / "scibert_full_top50_train.jsonl"
+    if not src.exists():
+        print(f"{src.relative_to(PROJECT_ROOT).as_posix()} not present; training list not written", flush=True)
+        return
+    with open(src, encoding="utf-8") as f:
+        his = [json.loads(line) for line in f if line.strip()]
+    assert [r["paper_id"] for r in his] == split["train"], "train list: paper_id order differs from split.json[train]"
+    recs, n_empty = [], 0
+    for r in his:
+        cands = r.get("candidates", r.get("candidate_names"))
+        assert len(cands) == K and len(set(cands)) == K, f"{r['paper_id']}: not 50 distinct candidates"
+        gold_in_list = [] if r["gold_in_list"] == ["NONE"] else r["gold_in_list"]
+        assert all(g in cands for g in gold_in_list), f"{r['paper_id']}: gold_in_list not a subset of candidates"
+        n_empty += not gold_in_list
+        recs.append({"paper_id": r["paper_id"], "candidates": cands, "scores": r["scores"], "gold_in_list": gold_in_list})
+    out = out_dir / "scibert_full_top50_train.jsonl"
+    write_jsonl(out, recs)
+    print(f"{out.name}: {len(recs)} lists re-keyed from {src.relative_to(PROJECT_ROOT).as_posix()} "
+          f"(blob {git_blob(src)[:12] or 'untracked'}); empty gold_in_list {n_empty}", flush=True)
 
 
 if __name__ == "__main__":
