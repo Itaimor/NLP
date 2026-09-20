@@ -157,13 +157,17 @@ def main():
         elapsed = time.time() - start_time
         print(f"[SciBERT Handoffs] Train inference finished in {elapsed:.1f}s ({len(train_df)/elapsed:.1f} papers/sec)")
 
-        # Save JSONL and JSON
+        # Save JSONL and JSON to both artifacts and results directories
         with open(train_shortlist_path, "w") as f:
+            f.write("\n".join(train_jsonl_lines) + "\n")
+        with open(results_dir / "scibert_full_top50_train.jsonl", "w") as f:
             f.write("\n".join(train_jsonl_lines) + "\n")
         print(f"Saved {train_shortlist_path} ({train_shortlist_path.stat().st_size / (1024*1024):.1f} MB)")
 
         train_json_path = arm_dir / "gemma_candidates_train.json"
         with open(train_json_path, "w") as f:
+            json.dump(train_json_dict, f, indent=2)
+        with open(results_dir / "gemma_candidates_train.json", "w") as f:
             json.dump(train_json_dict, f, indent=2)
         print(f"Saved {train_json_path} ({train_json_path.stat().st_size / (1024*1024):.1f} MB)")
 
@@ -239,7 +243,14 @@ def main():
         jsonl_path = arm_dir / f"scibert_full_top50_{split_name}.jsonl"
         with open(jsonl_path, "w") as f:
             f.write("\n".join(jsonl_lines) + "\n")
+        with open(results_dir / f"scibert_full_top50_{split_name}.jsonl", "w") as f:
+            f.write("\n".join(jsonl_lines) + "\n")
         print(f"Saved {jsonl_path} ({jsonl_path.stat().st_size / (1024*1024):.1f} MB)")
+
+        json_path = arm_dir / f"gemma_candidates_{split_name}.json"
+        if json_path.exists():
+            import shutil
+            shutil.copy(json_path, results_dir / f"gemma_candidates_{split_name}.json")
 
     # -------------------------------------------------------------
     # TASK 3: Official Scoring via Shai's evaluate.py
