@@ -1,0 +1,7 @@
+{
+ "step": 5000,
+ "epoch": 1,
+ "batch_in_epoch": 1057,
+ "skipped": 0,
+ "train_s": 22914.69640469551
+}

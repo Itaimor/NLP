@@ -1,0 +1,45 @@
+{
+ "arm": "5a-smoke",
+ "split": "validation",
+ "model": "google/gemma-3-4b-it",
+ "adapter": null,
+ "shortlist": "results/shortlists/scibert_full_top50_val.jsonl",
+ "n_papers": 100,
+ "sampled": true,
+ "code": {
+  "commit": "bef691c922246479c6af0cbf277b481d47e31e1b",
+  "uncommitted_changes": []
+ },
+ "max_new_tokens": 160,
+ "timing_by_batch_size": {
+  "8": {
+   "sec_per_paper": 0.700098283290863,
+   "peak_reserved_gb": 4.912109375
+  }
+ },
+ "metrics": {
+  "papers": 100,
+  "parse_rate": 1.0,
+  "empty_output_rate": 0.0,
+  "off_list_rate_lines": 0.037037037037037035,
+  "papers_with_off_list": 0.24,
+  "mean_picks": 8.84,
+  "median_picks": 9,
+  "first_pick_is_top1": 0.86,
+  "adjacent_in_shown_order": 0.7602040816326531,
+  "hit_max_new_tokens_rate": 0.0,
+  "mean_new_tokens": 44.41,
+  "micro_precision": 0.25904977375565613,
+  "micro_recall": 0.5768261964735516,
+  "micro_f1": 0.35753317720530836,
+  "gold_coverage_by_shortlist": 0.8387909319899244,
+  "emitted_over_gold_in_list": 2.6546546546546548,
+  "mean_gold": 3.97,
+  "tail_gold": 81,
+  "tail_coverage_by_shortlist": 0.49382716049382713,
+  "tail_precision": 0.22916666666666666,
+  "tail_recall": 0.2716049382716049,
+  "tail_f1": 0.24858757062146894
+ },
+ "gpu": "NVIDIA GeForce RTX 3060 Ti"
+}
