@@ -1,5 +1,5 @@
 {
-    "run_datetime": "22/09/2026 15:49",
+    "run_datetime": "22/09/2026 18:03",
     "taus": {
         "head": 0.04,
         "torso": 0.02,
@@ -8,7 +8,7 @@
     "objective": "Maximise each band's validation Micro-F1 over TAU_CANDIDATES (corrected grid, 0.0005-0.98, spanning both extremes).",
     "validation_file": "majority_val.parquet",
     "validation_checksum": "9754187cf8b6bc5c2042b9172ef8cbf14c035d591b220a9b49931634ed4de3ff",
-    "commit": "966f9e1ba78eda98c65393637455a0da56851949",
+    "commit": "a46ecbbbee0a9451373f2fc48f66854e9dc916e3",
     "has_tracked_changes": true,
     "tau_sweep": {
         "head": [

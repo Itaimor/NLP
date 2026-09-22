@@ -1,5 +1,5 @@
 {
-    "run_datetime": "22/09/2026 15:49",
+    "run_datetime": "22/09/2026 18:03",
     "per_band": {
         "head": {
             "tau": 0.92,
@@ -32,6 +32,15 @@
             "macro_f1_present_labels": 0.168676062030056
         }
     },
+    "overall": {
+        "num_labels": 1864,
+        "num_labels_present_in_test": 805,
+        "precision": 0.3089077860201435,
+        "recall": 0.3868872271319586,
+        "micro_f1": 0.34352783366867873,
+        "macro_f1_all_labels": 0.09509430805610805,
+        "macro_f1_present_labels": 0.22019352821936075
+    },
     "ranking_metrics": {
         "precision_at_1": 0.5504132231404959,
         "recall_at_1": 0.1515503321288445,
@@ -40,7 +49,14 @@
         "precision_at_5": 0.32925619834710745,
         "recall_at_5": 0.41616714965475293
     },
+    "ranking_note": null,
+    "ranking_tie_fractions": {
+        "1": 0.0,
+        "3": 0.0,
+        "5": 0.0
+    },
     "delta_head_tail": 0.33681533593932833,
+    "delta_head_tail_basis": "micro_f1",
     "mean_predictions_per_paper": 5.481322314049587,
     "per_label_counts": {
         "tp": [

@@ -1,5 +1,5 @@
 {
-    "run_datetime": "21/09/2026 15:48",
+    "run_datetime": "22/09/2026 18:05",
     "per_band": {
         "head": {
             "tau": 0.5,
@@ -32,6 +32,15 @@
             "macro_f1_present_labels": 0.2764842445097292
         }
     },
+    "overall": {
+        "num_labels": 1864,
+        "num_labels_present_in_test": 805,
+        "precision": 0.2830160282940778,
+        "recall": 0.5681698013445124,
+        "micro_f1": 0.3778285656880227,
+        "macro_f1_all_labels": 0.1416128963239636,
+        "macro_f1_present_labels": 0.3279086195625691
+    },
     "ranking_metrics": {
         "precision_at_1": 0.6095867768595041,
         "recall_at_1": 0.1672307967514579,
@@ -40,7 +49,14 @@
         "precision_at_5": 0.3860495867768596,
         "recall_at_5": 0.4855011866003601
     },
+    "ranking_note": "P@k/R@k not reported: the top-k boundary falls inside a group of equal scores for {1: 0.9993388429752066, 3: 0.9980165289256199, 5: 0.9907438016528926} of papers (tolerance 0.01), so the top-k set would be decided by column order, not by the arm. A set-emitting arm must count its ranking from its own ordered picks instead.",
+    "ranking_tie_fractions": {
+        "1": 0.9993388429752066,
+        "3": 0.9980165289256199,
+        "5": 0.9907438016528926
+    },
     "delta_head_tail": 0.25874944173966924,
+    "delta_head_tail_basis": "micro_f1",
     "mean_predictions_per_paper": 8.78611570247934,
     "per_label_counts": {
         "tp": [

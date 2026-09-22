@@ -25,6 +25,13 @@ TAU_CANDIDATES = tuple(sorted(set(
     + [round(0.10 + i * 0.02, 3) for i in range(1, 45)] # 0.12 to 0.98 (include)
 )))
 
+# A top-k boundary that falls inside a group of equal scores is decided by column
+# order, not by the model. Above this share of papers, P@k/R@k stop being a property
+# of the arm and evaluate_test refuses to report them. Probability-emitting encoders
+# sit at ~0; set-emitting arms (0/1 matrices, or rank scores over a shortlist with
+# zeros elsewhere) sit near 1.
+RANKING_TIE_TOLERANCE = 0.01
+
 ## Section: Validating inputs ##
 def validate_evaluation_inputs(
         probabilities,
@@ -256,6 +263,12 @@ def evaluate_thresholds(
     Searches tau for a given band's validation scores.
     Maximises Micro-F1 over labels occurring in validation.
 
+    Tie-break: candidates are scanned in ascending order and a new best must be
+    strictly greater, so on a plateau the LOWEST tau wins - the more permissive
+    threshold, which predicts more labels. This is deliberate (on a flat region a
+    lower threshold buys recall in the tail at no measured micro-F1 cost) and it is
+    recorded here because it is not recoverable from the saved tau alone.
+
     This function can be called independently of choose_tau, but it is not advised.
 
     Assumptions:
@@ -315,6 +328,8 @@ def evaluate_thresholds(
 
         tau_sweep.append({"tau": float(tau), "micro_f1": micro_f1})
 
+        # Strictly greater, so an equal score never displaces the lower tau
+        # already held. See the tie-break note in the docstring.
         if micro_f1 > best_micro_f1:
             best_tau = float(tau)
             best_micro_f1 = micro_f1
@@ -322,6 +337,7 @@ def evaluate_thresholds(
         "best_tau": best_tau,
         "best_micro_f1": best_micro_f1,
         "tau_sweep": tau_sweep,
+        "tie_break": "lowest tau wins on equal Micro-F1",
     }
 
 
@@ -382,7 +398,42 @@ def choose_tau(val_probs, val_labels, band_map):
     return chosen_taus, tau_sweep
 
 
-def evaluate_test(test_probs, test_labels, band_map, chosen_taus):
+def ranking_tie_fractions(probabilities, k_values=(1, 3, 5)):
+    """
+    Measures how often a top-k boundary falls inside a group of equal scores.
+
+    When the k-th and the (k+1)-th score are equal, which labels land in the top k
+    is settled by column order rather than by the model, so P@k and R@k measure
+    label_order.json instead of the arm. A probability-emitting encoder essentially
+    never ties; a set-emitting arm ties on almost every paper.
+
+    Inputs:
+    --- probabilities: score matrix [num_papers, num_labels], NumPy.
+    --- k_values: the k values that will be reported.
+    Output:
+    --- dictionary mapping each k to the share of papers whose top-k boundary
+        sits inside a tie.
+    """
+
+    num_labels = probabilities.shape[1]
+    ordered = np.sort(probabilities, axis=1)[:, ::-1]  # Descending.
+
+    fractions = {}
+    for k in k_values:
+        if k >= num_labels:
+            continue
+        fractions[int(k)] = float(np.mean(ordered[:, k - 1] == ordered[:, k]))
+
+    return fractions
+
+
+def evaluate_test(
+    test_probs,
+    test_labels,
+    band_map,
+    chosen_taus,
+    compute_ranking="auto",
+):
     """
     Evaluates test scores using thresholds selected on validation.
 
@@ -391,8 +442,13 @@ def evaluate_test(test_probs, test_labels, band_map, chosen_taus):
     --- test_labels: binary answers with the same shape and ordering.
     --- band_map: dictionary mapping column index to head, torso or tail.
     --- chosen_taus: dictionary containing one threshold per band.
+    --- compute_ranking: "auto" (default) reports P@k/R@k only when the ranking
+        is not decided by ties, and returns None with a note when it is; True
+        forces them, False skips them. Set-emitting arms must not use the
+        forced setting - they need a ranking counted from their own ordered
+        picks, as score_gemma.gemma_ranking_metrics does.
     Output:
-    --- dictionary containing per-band metrics, ranking metrics,
+    --- dictionary containing per-band metrics, overall metrics, ranking metrics,
         head-tail delta, prediction counts and per-label TP/FP/FN.
     """
 
@@ -493,40 +549,101 @@ def evaluate_test(test_probs, test_labels, band_map, chosen_taus):
             ),
         }
 
+    # Calculates the same metrics pooled over every label, ignoring bands.
+    # Alkan et al.'s Table 5 is an overall figure, so a comparison against it
+    # needs this row rather than a band row.
+    overall_label_f1 = f1_score(
+        true_labels,
+        predictions,
+        average=None,
+        zero_division=0,
+    )
+
+    overall = {
+        "num_labels": int(num_labels),
+        "num_labels_present_in_test": int(labels_present_in_test.sum()),
+        "precision": float(precision_score(
+            true_labels, predictions, average="micro", zero_division=0,
+        )),
+        "recall": float(recall_score(
+            true_labels, predictions, average="micro", zero_division=0,
+        )),
+        "micro_f1": float(f1_score(
+            true_labels, predictions, average="micro", zero_division=0,
+        )),
+        "macro_f1_all_labels": float(overall_label_f1.mean()),
+        "macro_f1_present_labels": (
+            float(overall_label_f1[labels_present_in_test].mean())
+            if labels_present_in_test.any()
+            else None
+        ),
+    }
+
     # Done with calculates metrics.
-    # Ranks labels by score, resolving ties by the fixed column order.
-    top_indices = np.argsort(
-        -test_probs.astype(np.float64),  # Minus turns the order to be from high to low.
-        axis=1,
-        kind="stable",
-    )[:, :min(5, num_labels)] # takes at most 5 top labels (less if the list is shorter)
+    # Decides whether a ranking can be read off these scores at all.
+    tie_fractions = ranking_tie_fractions(test_probs)
+    ranking_is_ambiguous = any(
+        fraction > RANKING_TIE_TOLERANCE
+        for fraction in tie_fractions.values()
+    )
 
-    ranked_correct = np.take_along_axis(true_labels, top_indices, axis=1)
-    correct_counts = true_labels.sum(axis=1)
-    ranking_metrics = {}
+    if compute_ranking == "auto":
+        report_ranking = not ranking_is_ambiguous
+    else:
+        report_ranking = bool(compute_ranking)
 
-    for k in (1, 3, 5):
-        if k > num_labels:
-            continue
-
-        # Counts correct labels among each paper's top-k scores.
-        hits = ranked_correct[:, :k].sum(axis=1)
-
-        # Calculates per-paper recall, using zero for papers with no gold labels.
-        recall_per_paper = np.divide(
-            hits,
-            correct_counts,
-            out=np.zeros(num_papers, dtype=float),
-            where=correct_counts > 0,
+    ranking_note = None
+    if not report_ranking:
+        ranking_note = (
+            "P@k/R@k not reported: the top-k boundary falls inside a group of "
+            f"equal scores for {tie_fractions} of papers (tolerance "
+            f"{RANKING_TIE_TOLERANCE}), so the top-k set would be decided by "
+            "column order, not by the arm. A set-emitting arm must count its "
+            "ranking from its own ordered picks instead."
         )
-        ranking_metrics[f"precision_at_{k}"] = float((hits / k).mean())      # P@
-        ranking_metrics[f"recall_at_{k}"] = float(recall_per_paper.mean())   # R@
+
+    ranking_metrics = None
+
+    # Ranks labels by score, resolving ties by the fixed column order.
+    if report_ranking:
+        top_indices = np.argsort(
+            -test_probs.astype(np.float64),  # Minus turns the order to be from high to low.
+            axis=1,
+            kind="stable",
+        )[:, :min(5, num_labels)] # takes at most 5 top labels (less if the list is shorter)
+
+        ranked_correct = np.take_along_axis(true_labels, top_indices, axis=1)
+        correct_counts = true_labels.sum(axis=1)
+        ranking_metrics = {}
+
+        for k in (1, 3, 5):
+            if k > num_labels:
+                continue
+
+            # Counts correct labels among each paper's top-k scores.
+            hits = ranked_correct[:, :k].sum(axis=1)
+
+            # Calculates per-paper recall, using zero for papers with no gold labels.
+            recall_per_paper = np.divide(
+                hits,
+                correct_counts,
+                out=np.zeros(num_papers, dtype=float),
+                where=correct_counts > 0,
+            )
+            ranking_metrics[f"precision_at_{k}"] = float((hits / k).mean())      # P@
+            ranking_metrics[f"recall_at_{k}"] = float(recall_per_paper.mean())   # R@
 
 
     results = {
         "per_band": per_band,
+        "overall": overall,
         "ranking_metrics": ranking_metrics,
+        "ranking_note": ranking_note,
+        "ranking_tie_fractions": tie_fractions,
         "delta_head_tail": per_band["head"]["micro_f1"] - per_band["tail"]["micro_f1"],
+        # Named because the published deltas this is compared against do not state
+        # their own basis; a micro-F1 delta must not be tabled beside a macro one.
+        "delta_head_tail_basis": "micro_f1",
         "mean_predictions_per_paper": float(predictions.sum(axis=1).mean()),
         "per_label_counts": {
             "tp": tp.tolist(),
