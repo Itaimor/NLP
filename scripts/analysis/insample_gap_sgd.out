@@ -1,0 +1,7 @@
+=== generator: sgd_ovr ===
+  fit on all 18677 train papers: 23s
+  IN-SAMPLE  recall@50: pooled 1.000 | TAIL 1.000 (n=1720) | median gold rank TAIL 3, pooled 3
+  TEST       recall@50: pooled 0.898 | TAIL 0.753 (n=2165) | median gold rank TAIL 15, pooled 6
+  5-fold cross-fit: 193s
+  CROSS-FIT  recall@50: pooled 0.865 | TAIL 0.619 (n=1720) | median gold rank TAIL 26, pooled 6
+DONE

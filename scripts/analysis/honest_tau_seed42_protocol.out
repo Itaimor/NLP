@@ -1,0 +1,50 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+carve (seed 42, iterstrat): train 15822 val 2855 test 3025
+scoreable by CORPUS basis: Counter({'TORSO': 429, 'TAIL': 359, 'HEAD': 17}) | by TRAIN(18,677) basis: Counter({'TAIL': 410, 'TORSO': 383, 'HEAD': 12})
+ fit 0/805  33s
+ fit 100/805  43s
+ fit 200/805  54s
+ fit 300/805  64s
+ fit 400/805  74s
+ fit 500/805  83s
+ fit 600/805  93s
+ fit 700/805  102s
+ fit 800/805  111s
+
+===== band basis: CORPUS =====
+tau tuned on VAL: global-micro=0.100 global-macro=0.045 | tail-band micro=0.030 macro=0.020
+  TEST tau=0.5 default              HEAD  micro=0.4932 macro/17=0.4705
+  TEST tau=0.5 default              TORSO micro=0.2257 macro/429=0.1454
+  TEST tau=0.5 default              TAIL  micro=0.0110 macro/359=0.0078  macro/1418=0.0020
+  TEST ONE GLOBAL tau (micro-opt)   HEAD  micro=0.5680 macro/17=0.5772
+  TEST ONE GLOBAL tau (micro-opt)   TORSO micro=0.4542 macro/429=0.3950
+  TEST ONE GLOBAL tau (micro-opt)   TAIL  micro=0.2171 macro/359=0.1556  macro/1418=0.0394
+  TEST ONE GLOBAL tau (macro-opt)   HEAD  micro=0.4764 macro/17=0.4936
+  TEST ONE GLOBAL tau (macro-opt)   TORSO micro=0.4044 macro/429=0.3940
+  TEST ONE GLOBAL tau (macro-opt)   TAIL  micro=0.3347 macro/359=0.2584  macro/1418=0.0654
+  TEST TAIL-BAND tau (micro-opt)    HEAD  micro=0.4158 macro/17=0.4363
+  TEST TAIL-BAND tau (micro-opt)    TORSO micro=0.3548 macro/429=0.3635
+  TEST TAIL-BAND tau (micro-opt)    TAIL  micro=0.3629 macro/359=0.2989  macro/1418=0.0757
+  TEST TAIL-BAND tau (macro-opt)    HEAD  micro=0.3448 macro/17=0.3675
+  TEST TAIL-BAND tau (macro-opt)    TORSO micro=0.2938 macro/429=0.3144
+  TEST TAIL-BAND tau (macro-opt)    TAIL  micro=0.3620 macro/359=0.3243  macro/1418=0.0821
+
+===== band basis: TRAIN18677 =====
+tau tuned on VAL: global-micro=0.100 global-macro=0.045 | tail-band micro=0.035 macro=0.020
+  TEST tau=0.5 default              HEAD  micro=0.5024 macro/12=0.4921
+  TEST tau=0.5 default              TORSO micro=0.2427 macro/383=0.1601
+  TEST tau=0.5 default              TAIL  micro=0.0218 macro/410=0.0145  macro/1469=0.0040
+  TEST ONE GLOBAL tau (micro-opt)   HEAD  micro=0.5741 macro/12=0.5828
+  TEST ONE GLOBAL tau (micro-opt)   TORSO micro=0.4606 macro/383=0.4076
+  TEST ONE GLOBAL tau (micro-opt)   TAIL  micro=0.2528 macro/410=0.1757  macro/1469=0.0490
+  TEST ONE GLOBAL tau (macro-opt)   HEAD  micro=0.4861 macro/12=0.5005
+  TEST ONE GLOBAL tau (macro-opt)   TORSO micro=0.4062 macro/383=0.3990
+  TEST ONE GLOBAL tau (macro-opt)   TAIL  micro=0.3498 macro/410=0.2716  macro/1469=0.0758
+  TEST TAIL-BAND tau (micro-opt)    HEAD  micro=0.4503 macro/12=0.4674
+  TEST TAIL-BAND tau (micro-opt)    TORSO micro=0.3754 macro/383=0.3787
+  TEST TAIL-BAND tau (micro-opt)    TAIL  micro=0.3637 macro/410=0.2950  macro/1469=0.0823
+  TEST TAIL-BAND tau (macro-opt)    HEAD  micro=0.3554 macro/12=0.3737
+  TEST TAIL-BAND tau (macro-opt)    TORSO micro=0.2929 macro/383=0.3110
+  TEST TAIL-BAND tau (macro-opt)    TAIL  micro=0.3554 macro/410=0.3268  macro/1469=0.0912
+
+DONE 113s

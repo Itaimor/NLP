@@ -1,0 +1,22 @@
+tail concepts: 1418 | scoreable (>=1 test positive): 359
+
+test-positive count -> how many tail concepts have exactly that many:
+    3 test positives :    1 concepts   (cumulative    1 / 359 = 0.3%)
+    5 test positives :  182 concepts   (cumulative  183 / 359 = 51.0%)
+    6 test positives :   83 concepts   (cumulative  266 / 359 = 74.1%)
+    7 test positives :   38 concepts   (cumulative  304 / 359 = 84.7%)
+    8 test positives :   24 concepts   (cumulative  328 / 359 = 91.4%)
+    9 test positives :   22 concepts   (cumulative  350 / 359 = 97.5%)
+   10 test positives :    5 concepts   (cumulative  355 / 359 = 98.9%)
+   11 test positives :    2 concepts   (cumulative  357 / 359 = 99.4%)
+   12 test positives :    1 concepts   (cumulative  358 / 359 = 99.7%)
+
+concepts with >=  1 test positives:  359  (25.3% of the 1,418 tail band)
+
+concepts with >=  2 test positives:  359  (25.3% of the 1,418 tail band)
+
+concepts with >=  3 test positives:  359  (25.3% of the 1,418 tail band)
+
+concepts with >=  5 test positives:  358  (25.2% of the 1,418 tail band)
+
+concepts with >= 10 test positives:    9  (0.6% of the 1,418 tail band)

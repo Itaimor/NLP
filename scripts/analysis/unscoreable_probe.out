@@ -1,0 +1,9 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+unscoreable concepts: 1059
+max prob assigned to any unscoreable concept: 0.5123
+tau=0.5   ->      1 predictions |    1/1059 concepts ever fired |    1/3025 test docs affected
+tau=0.2   ->      9 predictions |    9/1059 concepts ever fired |    8/3025 test docs affected
+tau=0.08  ->     35 predictions |   28/1059 concepts ever fired |   34/3025 test docs affected
+tau=0.02  ->    314 predictions |  138/1059 concepts ever fired |  263/3025 test docs affected
+tau=0.01  ->   1037 predictions |  251/1059 concepts ever fired |  770/3025 test docs affected
+DONE

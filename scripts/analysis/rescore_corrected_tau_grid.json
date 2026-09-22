@@ -1,0 +1,50 @@
+{
+  "scibert_full": {
+    "head": 0.5518,
+    "torso": 0.3566,
+    "tail": 0.215,
+    "preds_per_paper": 5.48,
+    "taus": {
+      "head": 0.92,
+      "torso": 0.82,
+      "tail": 0.54
+    },
+    "edge": {
+      "head": "interior",
+      "torso": "interior",
+      "tail": "interior"
+    }
+  },
+  "tfidf_lr": {
+    "head": 0.0719,
+    "torso": 0.0159,
+    "tail": 0.0014,
+    "preds_per_paper": 531.85,
+    "taus": {
+      "head": 0.0005,
+      "torso": 0.0005,
+      "tail": 0.005
+    },
+    "edge": {
+      "head": "FLOOR",
+      "torso": "FLOOR",
+      "tail": "interior"
+    }
+  },
+  "majority": {
+    "head": 0.0914,
+    "torso": 0.0385,
+    "tail": 0.0055,
+    "preds_per_paper": 37.0,
+    "taus": {
+      "head": 0.04,
+      "torso": 0.02,
+      "tail": 0.0025
+    },
+    "edge": {
+      "head": "interior",
+      "torso": "interior",
+      "tail": "interior"
+    }
+  }
+}

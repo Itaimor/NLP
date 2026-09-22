@@ -1,0 +1,21 @@
+scoreable labels 805
+
+(1) train 15,822, tau on VALIDATION {head:0.220, torso:0.120, tail:0.035}  [84s]
+    head  micro=0.6030 macro=0.6051
+    torso micro=0.4600 macro=0.3944
+    tail  micro=0.3637 macro=0.2950
+
+(2) train 18,677, SAME tau -> test
+    head  micro=0.6013 (-0.17pp) macro=0.6015 (-0.37pp)
+    torso micro=0.4661 (+0.60pp) macro=0.4110 (+1.67pp)
+    tail  micro=0.3787 (+1.51pp) macro=0.3225 (+2.75pp)
+    paired bootstrap, tail micro (2)-(1): [+0.72, +2.25] pp
+    (calibration check: tau re-tuned on the now-in-sample validation set would be {head:0.300, torso:0.200, tail:0.070} — not usable, shows the shift)
+
+(3) train 15,822, tau tuned ON TEST {head:0.200, torso:0.100, tail:0.025} (Alkan-style selection)
+    head  micro=0.6068 (+0.39pp vs honest) macro=0.6094 (+0.42pp)
+    torso micro=0.4606 (+0.05pp vs honest) macro=0.4076 (+1.32pp)
+    tail  micro=0.3664 (+0.28pp vs honest) macro=0.3193 (+2.42pp)
+
+tail tau stability (200 validation bootstraps): median 0.035, 5-95% [0.030, 0.045]; test tail micro at those taus: 0.3424-0.3664
+DONE 357s

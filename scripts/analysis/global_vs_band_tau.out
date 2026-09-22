@@ -1,0 +1,19 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+scoreable: {'HEAD': 17, 'TORSO': 429, 'TAIL': 359} total 805
+
+(a) ONE GLOBAL tau maximising overall macro-F1  -> tau = 0.04
+    overall macro-F1 = 0.3525
+    HEAD   F1 at that global tau = 0.4815
+    TORSO  F1 at that global tau = 0.3912
+    TAIL   F1 at that global tau = 0.3001
+
+(b) PER-BAND tau, each maximising its own band
+    HEAD   tau = 0.18  F1 = 0.5917
+    TORSO  tau = 0.07  F1 = 0.4157
+    TAIL   tau = 0.02  F1 = 0.3420
+
+=== WHAT PER-BAND TUNING BUYS ===
+  HEAD   global 0.4815 -> per-band 0.5917   gain +0.1102 (1.23x)
+  TORSO  global 0.3912 -> per-band 0.4157   gain +0.0245 (1.06x)
+  TAIL   global 0.3001 -> per-band 0.3420   gain +0.0419 (1.14x)
+DONE

@@ -1,0 +1,8 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+tail scoreable: 359
+tail MICRO-F1 @tau=0.02 = 0.3644   (gold tail occurrences in test = 2165)
+bootstrap CI95 over DOCUMENTS: [0.3476, 0.3807]  half-width = 1.66 pp
+=> UNPAIRED minimum detectable difference ~ 2.3 pp
+PAIRED diff CI95 (perturb 2%): [+27.79, +30.49] pp  half-width=1.35 pp
+PAIRED diff CI95 (perturb 5%): [+31.61, +34.66] pp  half-width=1.53 pp
+DONE

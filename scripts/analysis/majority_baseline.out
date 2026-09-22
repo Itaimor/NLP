@@ -1,0 +1,15 @@
+
+--- MAJORITY baseline: always predict the 1 most frequent train concepts ---
+  HEAD   micro-F1=0.0672  macro/scoreable(17)=0.0059  macro/all(17)=0.0059
+  TORSO  micro-F1=0.0000  macro/scoreable(429)=0.0000  macro/all(429)=0.0000
+  TAIL   micro-F1=0.0000  macro/scoreable(359)=0.0000  macro/all(1418)=0.0000
+
+--- MAJORITY baseline: always predict the 4 most frequent train concepts ---
+  HEAD   micro-F1=0.0891  macro/scoreable(17)=0.0228  macro/all(17)=0.0228
+  TORSO  micro-F1=0.0000  macro/scoreable(429)=0.0000  macro/all(429)=0.0000
+  TAIL   micro-F1=0.0000  macro/scoreable(359)=0.0000  macro/all(1418)=0.0000
+
+--- MAJORITY baseline: always predict the 5 most frequent train concepts ---
+  HEAD   micro-F1=0.0860  macro/scoreable(17)=0.0269  macro/all(17)=0.0269
+  TORSO  micro-F1=0.0000  macro/scoreable(429)=0.0000  macro/all(429)=0.0000
+  TAIL   micro-F1=0.0000  macro/scoreable(359)=0.0000  macro/all(1418)=0.0000

@@ -1,0 +1,6 @@
+n_labels 1864 train 18677 test 3025
+recall@25: OVERALL 0.810 | HEAD 0.845 (n=1709) TORSO 0.825 (n=9365) TAIL 0.720 (n=2165)
+recall@50: OVERALL 0.904 | HEAD 0.939 (n=1709) TORSO 0.918 (n=9365) TAIL 0.816 (n=2165)
+recall@100: OVERALL 0.956 | HEAD 0.981 (n=1709) TORSO 0.966 (n=9365) TAIL 0.892 (n=2165)
+scoreable/all: {'HEAD': (17, 17), 'TORSO': (429, 429), 'TAIL': (359, 1418)}
+DONE
