@@ -1,0 +1,89 @@
+
+Loading fixed datasets from split.json ... 
+Train: 15822, Validation: 2855, Test: 3025
+==============================================================================
+ARM: tfidf_lr    chosen taus: {'head': 0.0005, 'torso': 0.0005, 'tail': 0.005}
+  global min predicted probability, validation: 4.821e-04
+
+  -- HEAD  (band min prob 4.857e-04)
+     chosen tau 0.0005  ->  val micro-F1 0.071026
+     tau->0 predict-all LIMIT (closed form) 0.071000
+     chosen beats the limit: True   (margin +0.000026)
+     chosen tau is above the band's min probability: True
+     best value strictly BELOW the grid floor: tau=0.0  micro-F1 0.071000  -> does NOT beat the chosen tau
+     argmax over the sub-floor sweep: tau=0.0005  micro-F1 0.071026  @ 12.0 preds/paper in band
+
+  -- TORSO  (band min prob 4.821e-04)
+     chosen tau 0.0005  ->  val micro-F1 0.014928
+     tau->0 predict-all LIMIT (closed form) 0.014926
+     chosen beats the limit: True   (margin +0.000002)
+     chosen tau is above the band's min probability: True
+     best value strictly BELOW the grid floor: tau=0.0  micro-F1 0.014926  -> does NOT beat the chosen tau
+     argmax over the sub-floor sweep: tau=0.0005  micro-F1 0.014928  @ 382.8 preds/paper in band
+
+  -- TAIL  (band min prob 4.821e-04)
+     chosen tau 0.005  ->  val micro-F1 0.002125
+     tau->0 predict-all LIMIT (closed form) 0.001837
+     chosen beats the limit: True   (margin +0.000288)
+     chosen tau is above the band's min probability: True
+     best value strictly BELOW the grid floor: tau=0.001  micro-F1 0.001895  -> does NOT beat the chosen tau
+     argmax over the sub-floor sweep: tau=0.005  micro-F1 0.002125  @ 101.24 preds/paper in band
+
+==============================================================================
+ARM: scibert_full    chosen taus: {'head': 0.92, 'torso': 0.82, 'tail': 0.54}
+  global min predicted probability, validation: 1.020e-05
+
+  -- HEAD  (band min prob 4.345e-05)
+     chosen tau 0.92  ->  val micro-F1 0.557906
+     tau->0 predict-all LIMIT (closed form) 0.071000
+     chosen beats the limit: True   (margin +0.486906)
+     chosen tau is above the band's min probability: True
+     best value strictly BELOW the grid floor: tau=0.005  micro-F1 0.105066  -> does NOT beat the chosen tau
+     argmax over the sub-floor sweep: tau=0.005  micro-F1 0.105066  @ 7.97 preds/paper in band
+
+  -- TORSO  (band min prob 1.238e-05)
+     chosen tau 0.82  ->  val micro-F1 0.359419
+     tau->0 predict-all LIMIT (closed form) 0.014926
+     chosen beats the limit: True   (margin +0.344493)
+     chosen tau is above the band's min probability: True
+     best value strictly BELOW the grid floor: tau=0.005  micro-F1 0.026274  -> does NOT beat the chosen tau
+     argmax over the sub-floor sweep: tau=0.005  micro-F1 0.026274  @ 216.04 preds/paper in band
+
+  -- TAIL  (band min prob 1.199e-05)
+     chosen tau 0.54  ->  val micro-F1 0.183376
+     tau->0 predict-all LIMIT (closed form) 0.001837
+     chosen beats the limit: True   (margin +0.181539)
+     chosen tau is above the band's min probability: True
+     best value strictly BELOW the grid floor: tau=0.005  micro-F1 0.005131  -> does NOT beat the chosen tau
+     argmax over the sub-floor sweep: tau=0.005  micro-F1 0.005131  @ 373.09 preds/paper in band
+
+==============================================================================
+ARM: majority    chosen taus: {'head': 0.04, 'torso': 0.02, 'tail': 0.0025}
+  global min predicted probability, validation: 6.320e-05
+
+  -- HEAD  (band min prob 2.781e-02)
+     chosen tau 0.04  ->  val micro-F1 0.088163
+     tau->0 predict-all LIMIT (closed form) 0.071000
+     chosen beats the limit: True   (margin +0.017163)
+     chosen tau is above the band's min probability: True
+     best value strictly BELOW the grid floor: tau=0.0  micro-F1 0.071000  -> does NOT beat the chosen tau
+     argmax over the sub-floor sweep: tau=0.0  micro-F1 0.071000  @ 12.0 preds/paper in band
+
+  -- TORSO  (band min prob 2.591e-03)
+     chosen tau 0.02  ->  val micro-F1 0.037351
+     tau->0 predict-all LIMIT (closed form) 0.014926
+     chosen beats the limit: True   (margin +0.022424)
+     chosen tau is above the band's min probability: True
+     best value strictly BELOW the grid floor: tau=0.005  micro-F1 0.019938  -> does NOT beat the chosen tau
+     argmax over the sub-floor sweep: tau=0.005  micro-F1 0.019938  @ 230.0 preds/paper in band
+
+  -- TAIL  (band min prob 1.264e-04)
+     chosen tau 0.0025  ->  val micro-F1 0.004699
+     tau->0 predict-all LIMIT (closed form) 0.001837
+     chosen beats the limit: True   (margin +0.002862)
+     chosen tau is above the band's min probability: True
+     best value strictly BELOW the grid floor: tau=0.001  micro-F1 0.003309  -> does NOT beat the chosen tau
+     argmax over the sub-floor sweep: tau=0.001  micro-F1 0.003309  @ 339.0 preds/paper in band
+
+==============================================================================
+wrote D:\Users\LOGIN\Desktop\Ilana\NLP\NLP\scripts\analysis\tfidf_floor_limit.json

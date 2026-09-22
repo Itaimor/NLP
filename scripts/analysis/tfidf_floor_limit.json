@@ -1,0 +1,779 @@
+{
+  "tfidf_lr": {
+    "chosen_taus": {
+      "head": 0.0005,
+      "torso": 0.0005,
+      "tail": 0.005
+    },
+    "val_min_probability": 0.00048214217531494796,
+    "bands": {
+      "head": {
+        "chosen_tau": 0.0005,
+        "band_min_probability": 0.00048571807565167546,
+        "val_micro_f1_at_chosen": 0.071026,
+        "val_micro_f1_predict_all_limit": 0.071,
+        "chosen_beats_limit": true,
+        "margin_over_limit": 2.6e-05,
+        "chosen_tau_above_band_min_prob": true,
+        "best_strictly_below_grid_floor": {
+          "tau": 0.0,
+          "micro_f1": 0.071,
+          "preds_per_paper_in_band": 12.0
+        },
+        "sub_floor_sweep": [
+          {
+            "tau": 0.0,
+            "micro_f1": 0.071,
+            "preds_per_paper_in_band": 12.0
+          },
+          {
+            "tau": 1e-08,
+            "micro_f1": 0.071,
+            "preds_per_paper_in_band": 12.0
+          },
+          {
+            "tau": 1e-07,
+            "micro_f1": 0.071,
+            "preds_per_paper_in_band": 12.0
+          },
+          {
+            "tau": 1e-06,
+            "micro_f1": 0.071,
+            "preds_per_paper_in_band": 12.0
+          },
+          {
+            "tau": 1e-05,
+            "micro_f1": 0.071,
+            "preds_per_paper_in_band": 12.0
+          },
+          {
+            "tau": 5e-05,
+            "micro_f1": 0.071,
+            "preds_per_paper_in_band": 12.0
+          },
+          {
+            "tau": 0.0001,
+            "micro_f1": 0.071,
+            "preds_per_paper_in_band": 12.0
+          },
+          {
+            "tau": 0.0002,
+            "micro_f1": 0.071,
+            "preds_per_paper_in_band": 12.0
+          },
+          {
+            "tau": 0.0003,
+            "micro_f1": 0.071,
+            "preds_per_paper_in_band": 12.0
+          },
+          {
+            "tau": 0.0004,
+            "micro_f1": 0.071,
+            "preds_per_paper_in_band": 12.0
+          },
+          {
+            "tau": 0.0005,
+            "micro_f1": 0.071026,
+            "preds_per_paper_in_band": 12.0
+          },
+          {
+            "tau": 0.001,
+            "micro_f1": 0.069912,
+            "preds_per_paper_in_band": 10.0
+          },
+          {
+            "tau": 0.005,
+            "micro_f1": 0.064746,
+            "preds_per_paper_in_band": 2.8
+          }
+        ],
+        "test_micro_f1_at_chosen": 0.07189,
+        "test_micro_f1_predict_all_limit": 0.071867
+      },
+      "torso": {
+        "chosen_tau": 0.0005,
+        "band_min_probability": 0.00048214217531494796,
+        "val_micro_f1_at_chosen": 0.014928,
+        "val_micro_f1_predict_all_limit": 0.014926,
+        "chosen_beats_limit": true,
+        "margin_over_limit": 2e-06,
+        "chosen_tau_above_band_min_prob": true,
+        "best_strictly_below_grid_floor": {
+          "tau": 0.0,
+          "micro_f1": 0.014926,
+          "preds_per_paper_in_band": 383.0
+        },
+        "sub_floor_sweep": [
+          {
+            "tau": 0.0,
+            "micro_f1": 0.014926,
+            "preds_per_paper_in_band": 383.0
+          },
+          {
+            "tau": 1e-08,
+            "micro_f1": 0.014926,
+            "preds_per_paper_in_band": 383.0
+          },
+          {
+            "tau": 1e-07,
+            "micro_f1": 0.014926,
+            "preds_per_paper_in_band": 383.0
+          },
+          {
+            "tau": 1e-06,
+            "micro_f1": 0.014926,
+            "preds_per_paper_in_band": 383.0
+          },
+          {
+            "tau": 1e-05,
+            "micro_f1": 0.014926,
+            "preds_per_paper_in_band": 383.0
+          },
+          {
+            "tau": 5e-05,
+            "micro_f1": 0.014926,
+            "preds_per_paper_in_band": 383.0
+          },
+          {
+            "tau": 0.0001,
+            "micro_f1": 0.014926,
+            "preds_per_paper_in_band": 383.0
+          },
+          {
+            "tau": 0.0002,
+            "micro_f1": 0.014926,
+            "preds_per_paper_in_band": 383.0
+          },
+          {
+            "tau": 0.0003,
+            "micro_f1": 0.014926,
+            "preds_per_paper_in_band": 383.0
+          },
+          {
+            "tau": 0.0004,
+            "micro_f1": 0.014926,
+            "preds_per_paper_in_band": 383.0
+          },
+          {
+            "tau": 0.0005,
+            "micro_f1": 0.014928,
+            "preds_per_paper_in_band": 382.8
+          },
+          {
+            "tau": 0.001,
+            "micro_f1": 0.014225,
+            "preds_per_paper_in_band": 180.85
+          },
+          {
+            "tau": 0.005,
+            "micro_f1": 0.012995,
+            "preds_per_paper_in_band": 27.58
+          }
+        ],
+        "test_micro_f1_at_chosen": 0.015876,
+        "test_micro_f1_predict_all_limit": 0.015874
+      },
+      "tail": {
+        "chosen_tau": 0.005,
+        "band_min_probability": 0.00048214217531494796,
+        "val_micro_f1_at_chosen": 0.002125,
+        "val_micro_f1_predict_all_limit": 0.001837,
+        "chosen_beats_limit": true,
+        "margin_over_limit": 0.000288,
+        "chosen_tau_above_band_min_prob": true,
+        "best_strictly_below_grid_floor": {
+          "tau": 0.001,
+          "micro_f1": 0.001895,
+          "preds_per_paper_in_band": 523.33
+        },
+        "sub_floor_sweep": [
+          {
+            "tau": 0.0,
+            "micro_f1": 0.001837,
+            "preds_per_paper_in_band": 1062.0
+          },
+          {
+            "tau": 1e-08,
+            "micro_f1": 0.001837,
+            "preds_per_paper_in_band": 1062.0
+          },
+          {
+            "tau": 1e-07,
+            "micro_f1": 0.001837,
+            "preds_per_paper_in_band": 1062.0
+          },
+          {
+            "tau": 1e-06,
+            "micro_f1": 0.001837,
+            "preds_per_paper_in_band": 1062.0
+          },
+          {
+            "tau": 1e-05,
+            "micro_f1": 0.001837,
+            "preds_per_paper_in_band": 1062.0
+          },
+          {
+            "tau": 5e-05,
+            "micro_f1": 0.001837,
+            "preds_per_paper_in_band": 1062.0
+          },
+          {
+            "tau": 0.0001,
+            "micro_f1": 0.001837,
+            "preds_per_paper_in_band": 1062.0
+          },
+          {
+            "tau": 0.0002,
+            "micro_f1": 0.001837,
+            "preds_per_paper_in_band": 1062.0
+          },
+          {
+            "tau": 0.0003,
+            "micro_f1": 0.001837,
+            "preds_per_paper_in_band": 1062.0
+          },
+          {
+            "tau": 0.0004,
+            "micro_f1": 0.001837,
+            "preds_per_paper_in_band": 1062.0
+          },
+          {
+            "tau": 0.0005,
+            "micro_f1": 0.001837,
+            "preds_per_paper_in_band": 1061.39
+          },
+          {
+            "tau": 0.001,
+            "micro_f1": 0.001895,
+            "preds_per_paper_in_band": 523.33
+          },
+          {
+            "tau": 0.005,
+            "micro_f1": 0.002125,
+            "preds_per_paper_in_band": 101.24
+          }
+        ],
+        "test_micro_f1_at_chosen": 0.001443,
+        "test_micro_f1_predict_all_limit": 0.001177
+      }
+    }
+  },
+  "scibert_full": {
+    "chosen_taus": {
+      "head": 0.92,
+      "torso": 0.82,
+      "tail": 0.54
+    },
+    "val_min_probability": 1.0204330465057865e-05,
+    "bands": {
+      "head": {
+        "chosen_tau": 0.92,
+        "band_min_probability": 4.34496505477e-05,
+        "val_micro_f1_at_chosen": 0.557906,
+        "val_micro_f1_predict_all_limit": 0.071,
+        "chosen_beats_limit": true,
+        "margin_over_limit": 0.486906,
+        "chosen_tau_above_band_min_prob": true,
+        "best_strictly_below_grid_floor": {
+          "tau": 0.005,
+          "micro_f1": 0.105066,
+          "preds_per_paper_in_band": 7.97
+        },
+        "sub_floor_sweep": [
+          {
+            "tau": 0.0,
+            "micro_f1": 0.071,
+            "preds_per_paper_in_band": 12.0
+          },
+          {
+            "tau": 1e-08,
+            "micro_f1": 0.071,
+            "preds_per_paper_in_band": 12.0
+          },
+          {
+            "tau": 1e-07,
+            "micro_f1": 0.071,
+            "preds_per_paper_in_band": 12.0
+          },
+          {
+            "tau": 1e-06,
+            "micro_f1": 0.071,
+            "preds_per_paper_in_band": 12.0
+          },
+          {
+            "tau": 1e-05,
+            "micro_f1": 0.071,
+            "preds_per_paper_in_band": 12.0
+          },
+          {
+            "tau": 5e-05,
+            "micro_f1": 0.071004,
+            "preds_per_paper_in_band": 12.0
+          },
+          {
+            "tau": 0.0001,
+            "micro_f1": 0.071074,
+            "preds_per_paper_in_band": 11.99
+          },
+          {
+            "tau": 0.0002,
+            "micro_f1": 0.07151,
+            "preds_per_paper_in_band": 11.91
+          },
+          {
+            "tau": 0.0003,
+            "micro_f1": 0.072133,
+            "preds_per_paper_in_band": 11.8
+          },
+          {
+            "tau": 0.0004,
+            "micro_f1": 0.072896,
+            "preds_per_paper_in_band": 11.68
+          },
+          {
+            "tau": 0.0005,
+            "micro_f1": 0.073721,
+            "preds_per_paper_in_band": 11.54
+          },
+          {
+            "tau": 0.001,
+            "micro_f1": 0.078282,
+            "preds_per_paper_in_band": 10.84
+          },
+          {
+            "tau": 0.005,
+            "micro_f1": 0.105066,
+            "preds_per_paper_in_band": 7.97
+          }
+        ],
+        "test_micro_f1_at_chosen": 0.551816,
+        "test_micro_f1_predict_all_limit": 0.071867
+      },
+      "torso": {
+        "chosen_tau": 0.82,
+        "band_min_probability": 1.237975538970204e-05,
+        "val_micro_f1_at_chosen": 0.359419,
+        "val_micro_f1_predict_all_limit": 0.014926,
+        "chosen_beats_limit": true,
+        "margin_over_limit": 0.344493,
+        "chosen_tau_above_band_min_prob": true,
+        "best_strictly_below_grid_floor": {
+          "tau": 0.005,
+          "micro_f1": 0.026274,
+          "preds_per_paper_in_band": 216.04
+        },
+        "sub_floor_sweep": [
+          {
+            "tau": 0.0,
+            "micro_f1": 0.014926,
+            "preds_per_paper_in_band": 383.0
+          },
+          {
+            "tau": 1e-08,
+            "micro_f1": 0.014926,
+            "preds_per_paper_in_band": 383.0
+          },
+          {
+            "tau": 1e-07,
+            "micro_f1": 0.014926,
+            "preds_per_paper_in_band": 383.0
+          },
+          {
+            "tau": 1e-06,
+            "micro_f1": 0.014926,
+            "preds_per_paper_in_band": 383.0
+          },
+          {
+            "tau": 1e-05,
+            "micro_f1": 0.014926,
+            "preds_per_paper_in_band": 383.0
+          },
+          {
+            "tau": 5e-05,
+            "micro_f1": 0.014935,
+            "preds_per_paper_in_band": 382.78
+          },
+          {
+            "tau": 0.0001,
+            "micro_f1": 0.014977,
+            "preds_per_paper_in_band": 381.7
+          },
+          {
+            "tau": 0.0002,
+            "micro_f1": 0.015157,
+            "preds_per_paper_in_band": 377.12
+          },
+          {
+            "tau": 0.0003,
+            "micro_f1": 0.015405,
+            "preds_per_paper_in_band": 371.01
+          },
+          {
+            "tau": 0.0004,
+            "micro_f1": 0.015681,
+            "preds_per_paper_in_band": 364.43
+          },
+          {
+            "tau": 0.0005,
+            "micro_f1": 0.015979,
+            "preds_per_paper_in_band": 357.57
+          },
+          {
+            "tau": 0.001,
+            "micro_f1": 0.017474,
+            "preds_per_paper_in_band": 326.7
+          },
+          {
+            "tau": 0.005,
+            "micro_f1": 0.026274,
+            "preds_per_paper_in_band": 216.04
+          }
+        ],
+        "test_micro_f1_at_chosen": 0.356619,
+        "test_micro_f1_predict_all_limit": 0.015874
+      },
+      "tail": {
+        "chosen_tau": 0.54,
+        "band_min_probability": 1.1987403922830708e-05,
+        "val_micro_f1_at_chosen": 0.183376,
+        "val_micro_f1_predict_all_limit": 0.001837,
+        "chosen_beats_limit": true,
+        "margin_over_limit": 0.181539,
+        "chosen_tau_above_band_min_prob": true,
+        "best_strictly_below_grid_floor": {
+          "tau": 0.005,
+          "micro_f1": 0.005131,
+          "preds_per_paper_in_band": 373.09
+        },
+        "sub_floor_sweep": [
+          {
+            "tau": 0.0,
+            "micro_f1": 0.001837,
+            "preds_per_paper_in_band": 1062.0
+          },
+          {
+            "tau": 1e-08,
+            "micro_f1": 0.001837,
+            "preds_per_paper_in_band": 1062.0
+          },
+          {
+            "tau": 1e-07,
+            "micro_f1": 0.001837,
+            "preds_per_paper_in_band": 1062.0
+          },
+          {
+            "tau": 1e-06,
+            "micro_f1": 0.001837,
+            "preds_per_paper_in_band": 1062.0
+          },
+          {
+            "tau": 1e-05,
+            "micro_f1": 0.001837,
+            "preds_per_paper_in_band": 1062.0
+          },
+          {
+            "tau": 5e-05,
+            "micro_f1": 0.001838,
+            "preds_per_paper_in_band": 1061.44
+          },
+          {
+            "tau": 0.0001,
+            "micro_f1": 0.001845,
+            "preds_per_paper_in_band": 1057.34
+          },
+          {
+            "tau": 0.0002,
+            "micro_f1": 0.001882,
+            "preds_per_paper_in_band": 1036.37
+          },
+          {
+            "tau": 0.0003,
+            "micro_f1": 0.00194,
+            "preds_per_paper_in_band": 1005.48
+          },
+          {
+            "tau": 0.0004,
+            "micro_f1": 0.002009,
+            "preds_per_paper_in_band": 970.97
+          },
+          {
+            "tau": 0.0005,
+            "micro_f1": 0.002084,
+            "preds_per_paper_in_band": 935.99
+          },
+          {
+            "tau": 0.001,
+            "micro_f1": 0.00248,
+            "preds_per_paper_in_band": 785.39
+          },
+          {
+            "tau": 0.005,
+            "micro_f1": 0.005131,
+            "preds_per_paper_in_band": 373.09
+          }
+        ],
+        "test_micro_f1_at_chosen": 0.215001,
+        "test_micro_f1_predict_all_limit": 0.001177
+      }
+    }
+  },
+  "majority": {
+    "chosen_taus": {
+      "head": 0.04,
+      "torso": 0.02,
+      "tail": 0.0025
+    },
+    "val_min_probability": 6.320313696051016e-05,
+    "bands": {
+      "head": {
+        "chosen_tau": 0.04,
+        "band_min_probability": 0.027809379622340202,
+        "val_micro_f1_at_chosen": 0.088163,
+        "val_micro_f1_predict_all_limit": 0.071,
+        "chosen_beats_limit": true,
+        "margin_over_limit": 0.017163,
+        "chosen_tau_above_band_min_prob": true,
+        "best_strictly_below_grid_floor": {
+          "tau": 0.0,
+          "micro_f1": 0.071,
+          "preds_per_paper_in_band": 12.0
+        },
+        "sub_floor_sweep": [
+          {
+            "tau": 0.0,
+            "micro_f1": 0.071,
+            "preds_per_paper_in_band": 12.0
+          },
+          {
+            "tau": 1e-08,
+            "micro_f1": 0.071,
+            "preds_per_paper_in_band": 12.0
+          },
+          {
+            "tau": 1e-07,
+            "micro_f1": 0.071,
+            "preds_per_paper_in_band": 12.0
+          },
+          {
+            "tau": 1e-06,
+            "micro_f1": 0.071,
+            "preds_per_paper_in_band": 12.0
+          },
+          {
+            "tau": 1e-05,
+            "micro_f1": 0.071,
+            "preds_per_paper_in_band": 12.0
+          },
+          {
+            "tau": 5e-05,
+            "micro_f1": 0.071,
+            "preds_per_paper_in_band": 12.0
+          },
+          {
+            "tau": 0.0001,
+            "micro_f1": 0.071,
+            "preds_per_paper_in_band": 12.0
+          },
+          {
+            "tau": 0.0002,
+            "micro_f1": 0.071,
+            "preds_per_paper_in_band": 12.0
+          },
+          {
+            "tau": 0.0003,
+            "micro_f1": 0.071,
+            "preds_per_paper_in_band": 12.0
+          },
+          {
+            "tau": 0.0004,
+            "micro_f1": 0.071,
+            "preds_per_paper_in_band": 12.0
+          },
+          {
+            "tau": 0.0005,
+            "micro_f1": 0.071,
+            "preds_per_paper_in_band": 12.0
+          },
+          {
+            "tau": 0.001,
+            "micro_f1": 0.071,
+            "preds_per_paper_in_band": 12.0
+          },
+          {
+            "tau": 0.005,
+            "micro_f1": 0.071,
+            "preds_per_paper_in_band": 12.0
+          }
+        ],
+        "test_micro_f1_at_chosen": 0.091429,
+        "test_micro_f1_predict_all_limit": 0.071867
+      },
+      "torso": {
+        "chosen_tau": 0.02,
+        "band_min_probability": 0.002591328462585807,
+        "val_micro_f1_at_chosen": 0.037351,
+        "val_micro_f1_predict_all_limit": 0.014926,
+        "chosen_beats_limit": true,
+        "margin_over_limit": 0.022424,
+        "chosen_tau_above_band_min_prob": true,
+        "best_strictly_below_grid_floor": {
+          "tau": 0.005,
+          "micro_f1": 0.019938,
+          "preds_per_paper_in_band": 230.0
+        },
+        "sub_floor_sweep": [
+          {
+            "tau": 0.0,
+            "micro_f1": 0.014926,
+            "preds_per_paper_in_band": 383.0
+          },
+          {
+            "tau": 1e-08,
+            "micro_f1": 0.014926,
+            "preds_per_paper_in_band": 383.0
+          },
+          {
+            "tau": 1e-07,
+            "micro_f1": 0.014926,
+            "preds_per_paper_in_band": 383.0
+          },
+          {
+            "tau": 1e-06,
+            "micro_f1": 0.014926,
+            "preds_per_paper_in_band": 383.0
+          },
+          {
+            "tau": 1e-05,
+            "micro_f1": 0.014926,
+            "preds_per_paper_in_band": 383.0
+          },
+          {
+            "tau": 5e-05,
+            "micro_f1": 0.014926,
+            "preds_per_paper_in_band": 383.0
+          },
+          {
+            "tau": 0.0001,
+            "micro_f1": 0.014926,
+            "preds_per_paper_in_band": 383.0
+          },
+          {
+            "tau": 0.0002,
+            "micro_f1": 0.014926,
+            "preds_per_paper_in_band": 383.0
+          },
+          {
+            "tau": 0.0003,
+            "micro_f1": 0.014926,
+            "preds_per_paper_in_band": 383.0
+          },
+          {
+            "tau": 0.0004,
+            "micro_f1": 0.014926,
+            "preds_per_paper_in_band": 383.0
+          },
+          {
+            "tau": 0.0005,
+            "micro_f1": 0.014926,
+            "preds_per_paper_in_band": 383.0
+          },
+          {
+            "tau": 0.001,
+            "micro_f1": 0.014926,
+            "preds_per_paper_in_band": 383.0
+          },
+          {
+            "tau": 0.005,
+            "micro_f1": 0.019938,
+            "preds_per_paper_in_band": 230.0
+          }
+        ],
+        "test_micro_f1_at_chosen": 0.038474,
+        "test_micro_f1_predict_all_limit": 0.015874
+      },
+      "tail": {
+        "chosen_tau": 0.0025,
+        "band_min_probability": 0.00012640627392102033,
+        "val_micro_f1_at_chosen": 0.004699,
+        "val_micro_f1_predict_all_limit": 0.001837,
+        "chosen_beats_limit": true,
+        "margin_over_limit": 0.002862,
+        "chosen_tau_above_band_min_prob": true,
+        "best_strictly_below_grid_floor": {
+          "tau": 0.001,
+          "micro_f1": 0.003309,
+          "preds_per_paper_in_band": 339.0
+        },
+        "sub_floor_sweep": [
+          {
+            "tau": 0.0,
+            "micro_f1": 0.001837,
+            "preds_per_paper_in_band": 1062.0
+          },
+          {
+            "tau": 1e-08,
+            "micro_f1": 0.001837,
+            "preds_per_paper_in_band": 1062.0
+          },
+          {
+            "tau": 1e-07,
+            "micro_f1": 0.001837,
+            "preds_per_paper_in_band": 1062.0
+          },
+          {
+            "tau": 1e-06,
+            "micro_f1": 0.001837,
+            "preds_per_paper_in_band": 1062.0
+          },
+          {
+            "tau": 1e-05,
+            "micro_f1": 0.001837,
+            "preds_per_paper_in_band": 1062.0
+          },
+          {
+            "tau": 5e-05,
+            "micro_f1": 0.001837,
+            "preds_per_paper_in_band": 1062.0
+          },
+          {
+            "tau": 0.0001,
+            "micro_f1": 0.001837,
+            "preds_per_paper_in_band": 1062.0
+          },
+          {
+            "tau": 0.0002,
+            "micro_f1": 0.001919,
+            "preds_per_paper_in_band": 990.0
+          },
+          {
+            "tau": 0.0003,
+            "micro_f1": 0.002023,
+            "preds_per_paper_in_band": 912.0
+          },
+          {
+            "tau": 0.0004,
+            "micro_f1": 0.002242,
+            "preds_per_paper_in_band": 782.0
+          },
+          {
+            "tau": 0.0005,
+            "micro_f1": 0.002339,
+            "preds_per_paper_in_band": 735.0
+          },
+          {
+            "tau": 0.001,
+            "micro_f1": 0.003309,
+            "preds_per_paper_in_band": 339.0
+          },
+          {
+            "tau": 0.005,
+            "micro_f1": 0.0,
+            "preds_per_paper_in_band": 0.0
+          }
+        ],
+        "test_micro_f1_at_chosen": 0.005492,
+        "test_micro_f1_predict_all_limit": 0.001177
+      }
+    }
+  }
+}

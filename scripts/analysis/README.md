@@ -21,5 +21,6 @@ were first run on. Point it at this repository's `.hf_cache` before re-running.
 | `majority_baseline.py` | the frequency-prior baseline, later superseded by `scripts/baselines.py` | Results (baseline row) |
 | `rescore_corrected_tau_grid.py` | re-selected tau per band under the corrected grid and re-scored every probability-emitting arm; output in `rescore_corrected_tau_grid.json` | Results, all encoder and baseline rows |
 | `bootstrap_gemma_vs_scibert.py` | paired bootstrap, 2000 resamples, seed 42, per-band micro-F1 differences vs SciBERT-alone; output in `bootstrap_gemma_vs_scibert.json` | Introduction and Results, every confidence interval |
+| `tfidf_floor_limit.py` | whether TF-IDF+LR's floor-pinned tau is a grid artefact — the closed-form `tau -> 0` predict-all limit against the chosen tau, per band, per arm; output in `tfidf_floor_limit.json` | Results / Baselines, the sentence defusing the TF-IDF floor |
 
 `.out` files are the captured stdout of the run that produced the figure.
