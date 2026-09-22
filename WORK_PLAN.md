@@ -254,20 +254,25 @@ classification routinely train the second stage on the first stage's lists for t
 the correct answer guaranteed present: DPR's reader (Karpukhin et al., EMNLP 2020), FiD (Izacard &
 Grave, EACL 2021), BLINK — which reports its own train/test coverage gap, 93% vs 82%, and trains that
 way regardless (Wu et al., EMNLP 2020, Table 1) — X-Transformer (Chang et al., KDD 2020),
-XR-Transformer (Zhang et al., NeurIPS 2021), AttentionXML (You et al., NeurIPS 2019), and the LLM
-re-rankers RankLLaMA (Ma et al., SIGIR 2024), ListT5 (Yoon et al., ACL 2024) and FIRST (Reddy et
-al., EMNLP 2024). What we do about the skew:
+XR-Transformer (Zhang et al., NeurIPS 2021), AttentionXML (You et al., NeurIPS 2019). The LLM
+re-rankers are fine-tuned the same way on first-stage lists of the training queries — RankLLaMA
+(pointwise; Ma et al., SIGIR 2024), ListT5 (Yoon et al., ACL 2024), and FIRST (Reddy et al., EMNLP
+2024; its lists are inherited from RankZephyr and its target is a GPT-4 ranking rather than gold
+labels). What we do about the skew:
 
 1. **Shuffle the candidate order in 5b's *training* prompts.** This is what the fine-tuned listwise
    re-rankers do — ListT5 "randomly shuffle[s] the positive and negative passages and assign[s]
-   identifiers {1, ..., m} to them to form each training data" (Yoon et al., ACL 2024, §4.1), and
-   training with shuffled lists is what makes a re-ranker insensitive to input order (Tang et al.,
-   NAACL 2024). Trained on shuffled lists, the model stops learning "the answer is near the top".
+   identifiers {1, ..., m} to them to form each training data" (Yoon et al., ACL 2024, §4.2), and
+   training with shuffled lists is what makes a re-ranker insensitive to input order: Tang et al.
+   (NAACL 2024, §3.2) attribute RankVicuna's robustness to positional bias to "its training process
+   that uses random shuffling as part of data augmentation". Trained on shuffled lists, the model
+   stops learning "the answer is near the top".
    **At validation and test time both arms see SciBERT's order.** An untouched LLM's ranking is
    "highly sensitive to the initial passage order" — on TREC DL19, nDCG@10 falls from 65.8 with the
    retriever's order to 25.2 with a random order (Sun et al., EMNLP 2023, Table 5) — and ListT5's
-   Table 5 shows shuffling the retriever's order at test costs an untouched model 8.8 points but a
-   shuffle-trained one 1.7. Shuffling the *test* lists would therefore cripple 5a while barely
+   Table 5 shows shuffling the retriever's order at test costs an untouched model (RankGPT-3.5) 8.8
+   points but a shuffle-trained one (RankVicuna-7b, same sliding-window method) 1.7, and ListT5
+   itself 0.4–1.2. Shuffling the *test* lists would therefore cripple 5a while barely
    touching 5b, and the comparison would flatter fine-tuning. The papers evaluate on the first-stage
    order "as is standard" (Tang et al., §3.2); so do we. Robustness check, one inference pass: score
    5b on shuffled test lists as well; the difference should be within a point or two.
@@ -646,7 +651,7 @@ validation *and* test (Stage 5's same-generator rule) so that Gemma starts on ti
 
 | parameter | who | how it is decided |
 |---|---|---|
-| **tau — the yes/no cutoff** | **Shai**, as one importable function `choose_tau(val_probs, val_labels, band_map) -> {band: tau}` in `evaluate.py`, for every scoring arm | **One cutoff per band, chosen on the validation set to maximise that band's micro-F1 over the topics that have at least one validation instance, from a fixed grid (0.005–0.10 in steps of 0.005, then 0.10–0.55 in steps of 0.02), then applied to the test set once.** The function writes `tau_<arm>.json` (the three values, the objective, the validation file's checksum, the commit) so a reader can see who chose the threshold and from what. Why the rule is this precise: on the same TF-IDF predictions, one cutoff for all bands chosen for overall micro-F1 gives a rare-band macro-F1 of 0.156; chosen for overall macro-F1, 0.258; one cutoff per band, 0.324 — a 2x swing, bigger than any difference we expect between arms. The pooled version lands the cutoff at 0.10, where the torso is happiest and the tail is starved — the operating-point artefact §9.3 accuses the reference paper of. A single global cutoff (macro objective) is reported once as a robustness row. |
+| **tau — the yes/no cutoff** | **Shai**, as one importable function `choose_tau(val_probs, val_labels, band_map) -> {band: tau}` in `evaluate.py`, for every scoring arm | **One cutoff per band, chosen on the validation set to maximise that band's micro-F1 over the topics that have at least one validation instance, from a fixed grid (0.0005–0.0045 in steps of 0.0005, 0.005–0.10 in steps of 0.005, then 0.10–0.98 in steps of 0.02), then applied to the test set once.** **Grid corrected 22 Sept 2026 — disclose in the paper.** The original grid (0.005–0.55) truncated the search: SciBERT-full's argmax sat on the ceiling at 0.54/0.54/0.54 with validation micro-F1 still climbing steeply (head 0.435 at 0.54 vs 0.558 at its true peak of 0.92). The corrected grid is a **strict superset**, so no previously reachable threshold was removed, and the new taus 0.92/0.82/0.54 are all interior — the tail's 0.54 turns out to be a genuine interior maximum that the old ceiling happened to coincide with. The correction **strengthened the encoder baseline** (test head micro-F1 to 0.5518) and consequently shrank Gemma's head margin until it straddles zero; it was triggered by the boundary diagnostic, not by any test-set result. The function writes `tau_<arm>.json` (the three values, the objective, the validation file's checksum, the commit) so a reader can see who chose the threshold and from what. Why the rule is this precise: on the same TF-IDF predictions, one cutoff for all bands chosen for overall micro-F1 gives a rare-band macro-F1 of 0.156; chosen for overall macro-F1, 0.258; one cutoff per band, 0.324 — a 2x swing, bigger than any difference we expect between arms. The pooled version lands the cutoff at 0.10, where the torso is happiest and the tail is starved — the operating-point artefact §9.3 accuses the reference paper of. A single global cutoff (macro objective) is reported once as a robustness row. |
 | SciBERT's learning rate, batch size, number of epochs | Itai | he trains it. Cap epochs at 8, not the current default of 20. One configuration per arm, no grid |
 | which epoch counts as "best" | **Shai's `evaluate.py`, after training**, from the per-epoch validation tables Itai's loop saves | best rare-band micro-F1 at the tau `choose_tau` returns for that epoch's validation probabilities — not lowest validation loss. The training script never picks a tau. See Itai's section |
 | Gemma's model size, 4B or 1B | Ilana | decided by the probe, not chosen in advance; if 5b is cut, 5a is re-run at 4B |

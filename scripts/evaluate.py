@@ -14,9 +14,15 @@ from datetime import datetime
 SHIFT = "   "
 BANDS = ("head", "torso", "tail")
 RUN_DATATIME = datetime.now().strftime("%d/%m/%Y %H:%M")
+# The grid must span both extremes: an arm whose best tau lands on the first or
+# last candidate has not had a threshold selected, it has had the search truncated.
+# SciBERT-full pinned at the old 0.54 ceiling (validation Micro-F1 still rising there)
+# and TF-IDF+LR pinned at the old 0.005 floor. This grid is a strict SUPERSET of the
+# previous one, so any arm whose optimum was already interior keeps its exact tau.
 TAU_CANDIDATES = tuple(sorted(set(
-      [round(i * 0.005, 3) for i in range(1, 21)]  # 0.005 to 0.10 (include)
-    + [round(0.10 + i * 0.02, 3) for i in range(1, 23)] # 0.12 to 0.54 (include)
+      [round(i * 0.0005, 4) for i in range(1, 10)]  # 0.0005 to 0.0045 - below the old floor
+    + [round(i * 0.005, 3) for i in range(1, 21)]  # 0.005 to 0.10 (include)
+    + [round(0.10 + i * 0.02, 3) for i in range(1, 45)] # 0.12 to 0.98 (include)
 )))
 
 ## Section: Validating inputs ##
