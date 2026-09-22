@@ -1,0 +1,126 @@
+{
+  "best_epoch_selected": 8,
+  "selection_metric": "Mean band micro-F1 across Head, Torso, Tail using choose_tau",
+  "epochs": {
+    "epoch_1": {
+      "epoch": 1,
+      "parquet_file": "results/scibert_full/val_epochs/scibert_full_val_epoch_1.parquet",
+      "chosen_taus": {
+        "head": 0.54,
+        "torso": 0.54,
+        "tail": 0.16
+      },
+      "best_micro_f1": {
+        "head": 0.2055,
+        "torso": 0.1183,
+        "tail": 0.0173
+      },
+      "mean_band_micro_f1": 0.1137
+    },
+    "epoch_2": {
+      "epoch": 2,
+      "parquet_file": "results/scibert_full/val_epochs/scibert_full_val_epoch_2.parquet",
+      "chosen_taus": {
+        "head": 0.54,
+        "torso": 0.54,
+        "tail": 0.32
+      },
+      "best_micro_f1": {
+        "head": 0.3558,
+        "torso": 0.1996,
+        "tail": 0.0642
+      },
+      "mean_band_micro_f1": 0.2065
+    },
+    "epoch_3": {
+      "epoch": 3,
+      "parquet_file": "results/scibert_full/val_epochs/scibert_full_val_epoch_3.parquet",
+      "chosen_taus": {
+        "head": 0.54,
+        "torso": 0.54,
+        "tail": 0.46
+      },
+      "best_micro_f1": {
+        "head": 0.366,
+        "torso": 0.2138,
+        "tail": 0.098
+      },
+      "mean_band_micro_f1": 0.2259
+    },
+    "epoch_4": {
+      "epoch": 4,
+      "parquet_file": "results/scibert_full/val_epochs/scibert_full_val_epoch_4.parquet",
+      "chosen_taus": {
+        "head": 0.54,
+        "torso": 0.54,
+        "tail": 0.54
+      },
+      "best_micro_f1": {
+        "head": 0.3929,
+        "torso": 0.2245,
+        "tail": 0.1313
+      },
+      "mean_band_micro_f1": 0.2496
+    },
+    "epoch_5": {
+      "epoch": 5,
+      "parquet_file": "results/scibert_full/val_epochs/scibert_full_val_epoch_5.parquet",
+      "chosen_taus": {
+        "head": 0.54,
+        "torso": 0.54,
+        "tail": 0.54
+      },
+      "best_micro_f1": {
+        "head": 0.4058,
+        "torso": 0.245,
+        "tail": 0.157
+      },
+      "mean_band_micro_f1": 0.2693
+    },
+    "epoch_6": {
+      "epoch": 6,
+      "parquet_file": "results/scibert_full/val_epochs/scibert_full_val_epoch_6.parquet",
+      "chosen_taus": {
+        "head": 0.54,
+        "torso": 0.54,
+        "tail": 0.54
+      },
+      "best_micro_f1": {
+        "head": 0.416,
+        "torso": 0.2591,
+        "tail": 0.1694
+      },
+      "mean_band_micro_f1": 0.2815
+    },
+    "epoch_7": {
+      "epoch": 7,
+      "parquet_file": "results/scibert_full/val_epochs/scibert_full_val_epoch_7.parquet",
+      "chosen_taus": {
+        "head": 0.54,
+        "torso": 0.54,
+        "tail": 0.54
+      },
+      "best_micro_f1": {
+        "head": 0.4258,
+        "torso": 0.2635,
+        "tail": 0.1799
+      },
+      "mean_band_micro_f1": 0.2897
+    },
+    "epoch_8": {
+      "epoch": 8,
+      "parquet_file": "results/scibert_full/val_epochs/scibert_full_val_epoch_8.parquet",
+      "chosen_taus": {
+        "head": 0.54,
+        "torso": 0.54,
+        "tail": 0.54
+      },
+      "best_micro_f1": {
+        "head": 0.4354,
+        "torso": 0.2692,
+        "tail": 0.1834
+      },
+      "mean_band_micro_f1": 0.296
+    }
+  }
+}

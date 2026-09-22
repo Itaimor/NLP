@@ -1,0 +1,52 @@
+{
+  "arm": "scibert_full",
+  "base_architecture": "allenai/scibert_scivocab_uncased",
+  "seed": 42,
+  "hyperparameters": {
+    "learning_rate_backbone": 2e-05,
+    "learning_rate_classifier": 0.0001,
+    "optimizer": "AdamW",
+    "batch_size": 8,
+    "eval_batch_size": 16,
+    "max_seq_length": 512,
+    "loss": "BCEWithLogitsLoss",
+    "pos_weight": 30.0,
+    "selection_metric": "coverage"
+  },
+  "training_cost": {
+    "device": "mps (Apple Silicon)",
+    "epochs_completed": 8,
+    "total_training_steps": 15824,
+    "steps_per_epoch": 1978,
+    "training_wall_clock_seconds": 28084.65,
+    "training_wall_clock_hours": 7.8,
+    "seconds_per_step": 1.775,
+    "peak_memory": "~10 GB Unified Memory",
+    "trainable_parameters": 111517215,
+    "total_parameters": 111517215,
+    "start_type": "fresh_start"
+  },
+  "model_checkpoint": {
+    "best_epoch": 8,
+    "best_val_loss": 0.0831,
+    "val_coverage_50": 0.8289323553382233,
+    "val_macro_f1": 0.09929697215557098,
+    "val_rare_f1": 0.0682729035615921,
+    "test_loss": 0.0793,
+    "test_coverage_50": 0.8588,
+    "test_macro_f1": 0.08657810837030411,
+    "test_rare_f1": 0.05111192166805267,
+    "best_model_pt_size_bytes": 488048732,
+    "best_model_pt_epoch_parity": "best_model.pt is identical to Epoch 8 (max abs prob diff = 0.0)",
+    "durable_storage_recommended": "GitHub Releases tag v0.1-scibert-full or Shared Team Cloud Storage"
+  },
+  "provenance": {
+    "base_commit": "dcb82e2",
+    "execution_commit": "e037005",
+    "commit_chain": [
+      "dcb82e2 Train's labels statistics for choosing the best configurations for the regression",
+      "366f46c How to Use These Files in Gemma Runs",
+      "e037005 Add Gemma Top-50 shortlists (train, val, test) to results/scibert_full"
+    ]
+  }
+}

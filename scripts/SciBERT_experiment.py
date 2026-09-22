@@ -308,9 +308,17 @@ def export_top_k_candidates(
 
 ### Subsection: Training ###
 
-def train_one_epoch(model, train_loader, optimizer, device, scheduler=None, pos_weight=None):
+def train_one_epoch(
+    model,
+    train_loader,
+    optimizer,
+    device,
+    scheduler=None,
+    pos_weight=None,
+    max_steps=None,
+):
     """
-    Trains SciBert for one epoch and return the average loss.
+    Trains SciBert for one epoch (or up to max_steps) and return the average loss.
     This implementation works identically whether model's mode is full or lora.
 
     Assumptions:
@@ -325,13 +333,15 @@ def train_one_epoch(model, train_loader, optimizer, device, scheduler=None, pos_
     --- device: torch.device.
     --- scheduler: optional LR scheduler, stepped once per batch
     --- pos_weight: optional tensor of positive class weights to counter extreme label imbalance
+    --- max_steps: optional int, stop after this many batches for timing slice benchmarks
     Output:
-    --- avg_loss: float, mean loss over the epoch
+    --- avg_loss: float, mean loss over the steps executed
     """
 
     model.train()
     total_loss = 0.0
     total_batches = len(train_loader)
+    target_batches = min(total_batches, max_steps) if max_steps is not None else total_batches
 
     loss_fct = (
         torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight)
@@ -339,8 +349,13 @@ def train_one_epoch(model, train_loader, optimizer, device, scheduler=None, pos_
         else torch.nn.BCEWithLogitsLoss()
     )
 
+    slice_start_time = time.time()
+    steps_done = 0
+
     # Track progress across batches with periodic flushed log updates
     for batch_idx, (input_ids, attention_mask, labels) in enumerate(train_loader):
+        if max_steps is not None and batch_idx >= max_steps:
+            break
 
         input_ids = input_ids.to(device)
         attention_mask = attention_mask.to(device)
@@ -363,18 +378,29 @@ def train_one_epoch(model, train_loader, optimizer, device, scheduler=None, pos_
             scheduler.step()
 
         total_loss += loss.item()
+        steps_done += 1
 
-        # Log batch progress every 100 batches and at the end of epoch so log monitors update in real time
-        if (batch_idx + 1) % 100 == 0 or (batch_idx + 1) == total_batches:
+        # Log batch progress every 100 batches and at the end of epoch/slice
+        if (batch_idx + 1) % 100 == 0 or (batch_idx + 1) == target_batches:
             running_loss = total_loss / (batch_idx + 1)
-            pct = 100.0 * (batch_idx + 1) / total_batches
+            pct = 100.0 * (batch_idx + 1) / target_batches
             print(
-                f"  [Batch {batch_idx + 1:4d}/{total_batches} ({pct:5.1f}%)] "
+                f"  [Batch {batch_idx + 1:4d}/{target_batches} ({pct:5.1f}%)] "
                 f"Current Batch Loss: {loss.item():.4f} | Running Avg Loss: {running_loss:.4f}",
                 flush=True,
             )
 
-    return total_loss / max(1, len(train_loader))
+    if max_steps is not None and steps_done > 0:
+        elapsed = time.time() - slice_start_time
+        sec_per_step = elapsed / steps_done
+        cuda_mem = ""
+        if torch.cuda.is_available():
+            cuda_mem = f" | Peak CUDA Allocated: {torch.cuda.max_memory_allocated() / (1024**2):.1f} MB"
+        print(f"\n{'=' * 60}")
+        print(f"[TIMING BENCHMARK] Completed {steps_done} steps in {elapsed:.2f}s ({sec_per_step:.4f} s/step){cuda_mem}")
+        print(f"{'=' * 60}\n", flush=True)
+
+    return total_loss / max(1, steps_done)
 
 
 def get_model_state_dict(model):
@@ -422,6 +448,7 @@ def full_train_for_one_configuration(
     pos_weight=None,
     tau_candidates=None,
     rare_indices=None,
+    max_steps=None,
 ):
     """
     Trains one configuration and supports resuming from a checkpoint.
@@ -564,7 +591,19 @@ def full_train_for_one_configuration(
                 device=device,
                 scheduler=scheduler,
                 pos_weight=pos_weight,
+                max_steps=max_steps,
             )
+
+        if max_steps is not None:
+            training_info = {
+                "original_best_epoch": 1,
+                "best_tau": 0.4,
+                "best_coverage_50": None,
+                "best_macro_f1": None,
+                "best_rare_f1": None,
+                "max_steps_slice": max_steps,
+            }
+            return model, training_info, {}, train_loss
 
         # Saves the current training state before validation.
         checkpoint = {
@@ -773,6 +812,7 @@ def run_SciBERT_experiment(
     export_candidates_path: Optional[str] = None,
     export_val_candidates_path: Optional[str] = None,
     k_candidates: int = 50,
+    max_steps: Optional[int] = None,
 ) -> Dict[str, Any]:
     """
     Executes an end-to-end SciBERT experiment arm (Full fine-tuning or LoRA).
@@ -899,10 +939,21 @@ def run_SciBERT_experiment(
         pos_weight=pos_weight_tensor,
         tau_candidates=tau_candidates,
         rare_indices=rare_indices,
+        max_steps=max_steps,
     )
 
     elapsed_time = time.time() - start_time
     best_tau = training_info["best_tau"]
+
+    if max_steps is not None:
+        print(f"\n[SciBERT Runner] max_steps={max_steps} timing benchmark slice completed in {elapsed_time:.2f}s.")
+        return {
+            "mode": mode,
+            "device": str(device),
+            "max_steps": max_steps,
+            "training_time_seconds": round(elapsed_time, 2),
+            "seconds_per_step": round(elapsed_time / max(1, max_steps), 4),
+        }
 
     results = {
         "mode": mode,
@@ -1067,6 +1118,12 @@ if __name__ == "__main__":
         action="store_true",
         help="Ignore existing checkpoints and start training fresh from epoch 1",
     )
+    parser.add_argument(
+        "--max-steps",
+        type=int,
+        default=None,
+        help="Maximum training steps to execute before stopping (useful for 200-step timing slices on 3060 Ti)",
+    )
     args = parser.parse_args()
 
     # 1. Device selection
@@ -1138,4 +1195,5 @@ if __name__ == "__main__":
         export_candidates_path=export_test_path,
         export_val_candidates_path=export_val_path,
         k_candidates=50,
+        max_steps=args.max_steps,
     )
