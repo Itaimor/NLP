@@ -29,7 +29,10 @@ import main as M
 
 N_BOOT = 2000
 SEED = 42
-SHORTLIST = ROOT / "results/shortlists/scibert_full_top50_test.jsonl"
+# Read the TRACKED handoff file (key "candidate_names") rather than the derived copy in
+# results/shortlists/, which is gitignored and would be absent on a fresh clone.
+SHORTLIST = ROOT / "results/scibert_full/scibert_full_top50_test.jsonl"
+SHORTLIST_DERIVED = ROOT / "results/shortlists/scibert_full_top50_test.jsonl"
 ARMS = ("5a", "5b", "5b-step-8500")
 
 
@@ -64,7 +67,11 @@ def main():
     gold_names = {p: {id_to_name[str(u)] for u in labs if str(u) in id_to_name}
                   for p, labs in zip(pids, test["verified_uat_ids"])}
 
-    shortlist = {r["paper_id"]: set(r["candidates"]) for r in read_jsonl(SHORTLIST)}
+    src = SHORTLIST if SHORTLIST.exists() else SHORTLIST_DERIVED
+    rows = read_jsonl(src)
+    key = "candidate_names" if "candidate_names" in rows[0] else "candidates"
+    shortlist = {r["paper_id"]: set(r[key]) for r in rows}
+    print(f"shortlist: {src.relative_to(ROOT)} (key {key!r})")
 
     # ---- 1. decomposition -------------------------------------------------
     gold_tail = shown_tail = 0

@@ -1,6 +1,7 @@
 
 Loading fixed datasets from split.json ... 
 Train: 15822, Validation: 2855, Test: 3025
+shortlist: results\scibert_full\scibert_full_top50_test.jsonl (key 'candidate_names')
 TEST tail gold                       : 2617
   present in the 50-candidate list   : 1695  (0.6477)
   never shown to the selector        : 922  (0.3523)
