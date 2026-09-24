@@ -1,0 +1,34 @@
+{
+ "arm": "5a-shuffled",
+ "split": "test",
+ "model": "google/gemma-3-4b-it",
+ "adapter": null,
+ "shortlist": "results/shortlists/scibert_full_top50_test_shuffled.jsonl",
+ "n_papers": 3025,
+ "sampled": false,
+ "code": {
+  "commit": "eb2df2ebb83784522fba5772e1e1d6ba558dca2f",
+  "uncommitted_changes": []
+ },
+ "max_new_tokens": 160,
+ "timing_by_batch_size": {
+  "8": {
+   "sec_per_paper": 0.6955163416586632,
+   "peak_reserved_gb": 5.322265625
+  }
+ },
+ "metrics": {
+  "papers": 3025,
+  "parse_rate": 0.9963636363636363,
+  "empty_output_rate": 0.0,
+  "off_list_rate_lines": 0.054903194240581536,
+  "papers_with_off_list": 0.34148760330578515,
+  "mean_picks": 8.939834710743801,
+  "median_picks": 9,
+  "first_pick_is_top1": 0.35733244857332447,
+  "adjacent_in_shown_order": 0.6427649923009696,
+  "hit_max_new_tokens_rate": 0.0,
+  "mean_new_tokens": 46.00727272727273
+ },
+ "gpu": "NVIDIA GeForce RTX 3060 Ti"
+}

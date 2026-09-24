@@ -1,0 +1,41 @@
+
+Loading fixed datasets from split.json ... 
+Train: 15822, Validation: 2855, Test: 3025
+gold test: (3025, 1864), 13239 positives
+
+  scibert      loaded (3025, 1864)  5.48 preds/paper
+  5a           loaded (3025, 1864)  8.79 preds/paper
+  5a-shuffled  loaded (3025, 1864)  8.94 preds/paper
+  5b           loaded (3025, 1864)  5.68 preds/paper
+  5b-shuffled  loaded (3025, 1864)  5.65 preds/paper
+
+==============================================================================
+PAIRED BOOTSTRAP - per-band micro-F1, A minus B, 2000 resamples, seed 42
+==============================================================================
+
+5a - 5a-shuffled   [order dependence, untouched arm]
+   head   +0.0899 [+0.0681, +0.1120]  *
+   torso  +0.0797 [+0.0738, +0.0857]  *
+   tail   +0.0670 [+0.0531, +0.0803]  *
+   -> CI straddles zero in: no band
+
+5b - 5b-shuffled   [order dependence, fine-tuned arm]
+   head   +0.0029 [-0.0084, +0.0143]
+   torso  +0.0080 [+0.0033, +0.0129]  *
+   tail   +0.0103 [+0.0027, +0.0179]  *
+   -> CI straddles zero in: ['head']
+
+5a-shuffled - SciBERT-alone   [residual gain, untouched]
+   head   -0.0887 [-0.1148, -0.0620]  *
+   torso  -0.0660 [-0.0754, -0.0568]  *
+   tail   +0.0122 [-0.0024, +0.0269]
+   -> CI straddles zero in: ['tail']
+
+5b-shuffled - SciBERT-alone   [residual gain, fine-tuned]
+   head   +0.0142 [-0.0075, +0.0364]
+   torso  +0.0136 [+0.0036, +0.0237]  *
+   tail   +0.0644 [+0.0497, +0.0794]  *
+   -> CI straddles zero in: ['head']
+
+* = CI excludes zero
+wrote D:\Users\LOGIN\Desktop\Ilana\NLP\NLP\scripts\analysis\bootstrap_order_robustness.json
