@@ -1,0 +1,44 @@
+{
+  "decomposition": {
+    "tail_gold_test": 2617,
+    "tail_gold_in_shortlist": 1695,
+    "coverage_at_50": 0.6476881925869316,
+    "never_shown_fraction": 0.35231180741306845,
+    "arms": {
+      "5a": {
+        "tail_gold_shown_and_picked": 805,
+        "selection_rate_of_shown_tail_gold": 0.4749262536873156
+      },
+      "5b": {
+        "tail_gold_shown_and_picked": 918,
+        "selection_rate_of_shown_tail_gold": 0.5415929203539823
+      },
+      "5b-step-8500": {
+        "tail_gold_shown_and_picked": 620,
+        "selection_rate_of_shown_tail_gold": 0.36578171091445427
+      }
+    }
+  },
+  "tail_macro_point": {
+    "5a": 0.2764842445097292,
+    "5b": 0.2943697420301276,
+    "5b-step-8500": 0.25368693491498445
+  },
+  "paired": {
+    "5b_minus_5b-step-8500": {
+      "difference": 0.04068280711514316,
+      "ci_low": 0.02851786318620014,
+      "ci_high": 0.05625418086817403
+    },
+    "5b_minus_5a": {
+      "difference": 0.01788549752039842,
+      "ci_low": 0.004388510163433133,
+      "ci_high": 0.03258067318067089
+    },
+    "5b-step-8500_minus_5a": {
+      "difference": -0.02279730959474474,
+      "ci_low": -0.03932385326817597,
+      "ci_high": -0.009580464667076469
+    }
+  }
+}

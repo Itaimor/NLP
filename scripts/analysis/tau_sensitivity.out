@@ -1,0 +1,19 @@
+
+Loading fixed datasets from split.json ... 
+Train: 15822, Validation: 2855, Test: 3025
+== HEAD  chosen 0.92 vs runner-up 0.9
+   VAL  delta micro-F1 = +0.00220  95% CI [-0.00647, +0.01052]   STRADDLES ZERO -> noise-separated
+   TEST micro-F1 0.55182 (chosen) vs 0.55717 (runner-up)  -> reported number moves by -0.00536
+   VAL  gold positives at/above chosen tau: 778/1261  (recall ceiling 0.617)
+
+== TORSO  chosen 0.82 vs runner-up 0.8
+   VAL  delta micro-F1 = +0.00059  95% CI [-0.00237, +0.00370]   STRADDLES ZERO -> noise-separated
+   TEST micro-F1 0.35662 (chosen) vs 0.35843 (runner-up)  -> reported number moves by -0.00181
+   VAL  gold positives at/above chosen tau: 3254/8222  (recall ceiling 0.396)
+
+== TAIL  chosen 0.54 vs runner-up 0.58
+   VAL  delta micro-F1 = +0.00086  95% CI [-0.00473, +0.00654]   STRADDLES ZERO -> noise-separated
+   TEST micro-F1 0.21500 (chosen) vs 0.22180 (runner-up)  -> reported number moves by -0.00680
+   VAL  gold positives at/above chosen tau: 642/2787  (recall ceiling 0.230)
+
+wrote D:\Users\LOGIN\Desktop\Ilana\NLP\NLP\scripts\analysis\tau_sensitivity.json

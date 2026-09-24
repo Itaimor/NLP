@@ -1,0 +1,22 @@
+
+Loading fixed datasets from split.json ... 
+Train: 15822, Validation: 2855, Test: 3025
+TEST tail gold                       : 2617
+  present in the 50-candidate list   : 1695  (0.6477)
+  never shown to the selector        : 922  (0.3523)
+  5a             picks   805/1695 of the tail gold it was shown = 0.4749
+  5b             picks   918/1695 of the tail gold it was shown = 0.5416
+  5b-step-8500   picks   620/1695 of the tail gold it was shown = 0.3658
+
+Tail macro-F1 (present labels), paired bootstrap, 2000 resamples, seed 42
+  5a             0.2765
+  5b             0.2944
+  5b-step-8500   0.2537
+
+  paired differences, A minus B
+  5b             - 5b-step-8500   +0.0407 [+0.0285, +0.0563]  *
+  5b             - 5a             +0.0179 [+0.0044, +0.0326]  *
+  5b-step-8500   - 5a             -0.0228 [-0.0393, -0.0096]  *
+
+* = CI excludes zero
+wrote D:\Users\LOGIN\Desktop\Ilana\NLP\NLP\scripts\analysis\tail_decomposition.json

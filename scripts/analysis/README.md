@@ -23,5 +23,7 @@ were first run on. Point it at this repository's `.hf_cache` before re-running.
 | `bootstrap_gemma_vs_scibert.py` | paired bootstrap, 2000 resamples, seed 42, per-band micro-F1 differences vs SciBERT-alone; output in `bootstrap_gemma_vs_scibert.json` | Introduction and Results, every confidence interval |
 | `tfidf_floor_limit.py` | whether TF-IDF+LR's floor-pinned tau is a grid artefact — the closed-form `tau -> 0` predict-all limit against the chosen tau, per band, per arm; output in `tfidf_floor_limit.json` | Results / Baselines, the sentence defusing the TF-IDF floor |
 | `bootstrap_order_robustness.py` | paired bootstrap, 2000 resamples, seed 42, for the {5a, 5b} x {SciBERT order, shuffled} design — each arm's order dependence and each shuffled arm's residual gain over SciBERT-alone; output in `bootstrap_order_robustness.json` | Introduction and Analysis, the candidate-order paragraph |
+| `tau_sensitivity.py` | whether each chosen per-band tau is signal-separated from its runner-up, and what the reported test number would be at the runner-up; output in `tau_sensitivity.json` | Analysis, the threshold-sensitivity row |
+| `tail_decomposition.py` | on TEST, how much tail gold never reaches the selector and what share of the shown tail gold each arm picks, plus tail macro-F1 paired bootstrap (2000 resamples, seed 42); output in `tail_decomposition.json` | Analysis, the operating-point and tail-decomposition rows |
 
 `.out` files are the captured stdout of the run that produced the figure.
