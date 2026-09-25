@@ -263,12 +263,19 @@ def run_pass(model, tokenizer, paper_ids, papers, vocab, indexes, batch_size, st
                 kind, matched = classify_off_list(line, *indexes)
                 classified.append({"line": line, "kind": kind, "matched": matched})
             counts = Counter(l.lower() for l in raw)
+            # The fine-tuned checkpoint loops on a minority of papers (a decoding artefact the
+            # 21 Sept ruling already recorded at 13-21 %). A loop repeats one term dozens of
+            # times, so every line-weighted rate below is distorted by it in whichever direction
+            # the looped term happens to fall. The unique-line counts are the honest denominator.
+            uniq_oov = {c["line"].lower() for c in classified}
             results[i] = {
                 "paper_id": paper_ids[i],
                 "picks": picks,                      # in-vocabulary, de-duplicated, as ordered
                 "off_list": off_list,                # raw lines the committed parser rejected
                 "off_list_classified": classified,
                 "n_emitted_lines": len(raw),
+                "n_unique_lines": len(counts),
+                "n_unique_oov_lines": len(uniq_oov),
                 "n_duplicate_lines": len(raw) - len(counts),
                 "raw_output": text,
                 "n_new_tokens": n,
@@ -281,16 +288,38 @@ def run_pass(model, tokenizer, paper_ids, papers, vocab, indexes, batch_size, st
 def summarise(results, papers, name_band, with_gold):
     n = len(results)
     lines = sum(r["n_emitted_lines"] for r in results)
+    uniq = sum(r["n_unique_lines"] for r in results)
     off = sum(len(r["off_list"]) for r in results)
+    uniq_off = sum(r["n_unique_oov_lines"] for r in results)
     kinds = Counter(c["kind"] for r in results for c in r["off_list_classified"])
     near = sum(v for k, v in kinds.items() if k.startswith("near_miss"))
+    # Same breakdown over unique lines: a looped term is counted once per paper, not once per line.
+    kinds_u = Counter()
+    for r in results:
+        seen = set()
+        for c in r["off_list_classified"]:
+            k = c["line"].lower()
+            if k not in seen:
+                seen.add(k)
+                kinds_u[c["kind"]] += 1
+    near_u = sum(v for k, v in kinds_u.items() if k.startswith("near_miss"))
+    loopers = [r for r in results if r["n_duplicate_lines"]]
     s = {
         "papers": n,
         "emitted_lines": lines,
+        "unique_lines": uniq,
+        # PRIMARY, unique-weighted: immune to the looping artefact. Report these.
+        "mean_cardinality_unique": uniq / n,
+        "median_cardinality_unique": sorted(r["n_unique_lines"] for r in results)[n // 2],
+        "out_of_vocabulary_rate_unique_lines": uniq_off / uniq if uniq else 0.0,
+        "near_miss_rate_of_oov_unique": near_u / uniq_off if uniq_off else None,
+        "hallucination_rate_of_oov_unique": kinds_u.get("hallucination", 0) / uniq_off if uniq_off else None,
+        "oov_breakdown_unique": dict(kinds_u),
+        # Line-weighted equivalents, kept for comparison. Distorted wherever a paper looped, so
+        # they are equal to the unique-weighted figures only when the duplicate rate is zero.
         "mean_cardinality_emitted": lines / n,
         "mean_cardinality_in_vocab": sum(len(r["picks"]) for r in results) / n,
         "median_cardinality_emitted": sorted(r["n_emitted_lines"] for r in results)[n // 2],
-        # The four Stage 6 deliverables.
         "out_of_vocabulary_rate_lines": off / lines if lines else 0.0,
         "papers_with_any_oov": sum(1 for r in results if r["off_list"]) / n,
         "near_miss_rate_of_oov": near / off if off else None,
@@ -298,8 +327,11 @@ def summarise(results, papers, name_band, with_gold):
         "near_miss_rate_lines": near / lines if lines else 0.0,
         "hallucination_rate_lines": kinds.get("hallucination", 0) / lines if lines else 0.0,
         "oov_breakdown": dict(kinds),
+        # The looping artefact itself, reported rather than smoothed away.
         "duplicate_rate_lines": sum(r["n_duplicate_lines"] for r in results) / lines if lines else 0.0,
-        "papers_with_duplicates": sum(1 for r in results if r["n_duplicate_lines"]) / n,
+        "papers_with_duplicates": len(loopers) / n,
+        "looper_mean_emitted": (sum(r["n_emitted_lines"] for r in loopers) / len(loopers)) if loopers else None,
+        "looper_mean_unique": (sum(r["n_unique_lines"] for r in loopers) / len(loopers)) if loopers else None,
         # Output hygiene, same columns Stage 5 reports so the two are readable side by side.
         "empty_output_rate": sum(1 for r in results if not r["n_emitted_lines"]) / n,
         "any_in_vocab_rate": sum(1 for r in results if r["picks"]) / n,
@@ -387,9 +419,10 @@ def main():
         timing[bs] = {"sec_per_paper": s_per_paper, "peak_reserved_gb": torch.cuda.max_memory_reserved() / 1024 ** 3}
         summ = summarise(results, papers, name_band, with_gold)
         print(f"batch {bs:2d}: {s_per_paper:.2f} s/paper, peak {timing[bs]['peak_reserved_gb']:.2f} GB | "
-              f"emitted {summ['mean_cardinality_emitted']:.1f}/paper, OOV {summ['out_of_vocabulary_rate_lines']:.3f} "
-              f"(near-miss {summ['near_miss_rate_of_oov'] or 0:.2f} / halluc {summ['hallucination_rate_of_oov'] or 0:.2f}), "
-              f"dup {summ['duplicate_rate_lines']:.3f}, truncated {summ['hit_max_new_tokens_rate']:.2f}"
+              f"unique {summ['mean_cardinality_unique']:.1f}/paper (emitted {summ['mean_cardinality_emitted']:.1f}), "
+              f"OOV {summ['out_of_vocabulary_rate_unique_lines']:.3f} "
+              f"(near-miss {summ['near_miss_rate_of_oov_unique'] or 0:.2f} / halluc {summ['hallucination_rate_of_oov_unique'] or 0:.2f}), "
+              f"loop {summ['papers_with_duplicates']:.3f} of papers, truncated {summ['hit_max_new_tokens_rate']:.2f}"
               + (f" | P {summ['micro_precision']:.3f} R {summ['micro_recall']:.3f} F1 {summ['micro_f1']:.3f}"
                  if with_gold else ""), flush=True)
 
