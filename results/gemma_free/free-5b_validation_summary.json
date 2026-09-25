@@ -1,0 +1,85 @@
+{
+ "arm": "free-5b",
+ "split": "validation",
+ "model": "google/gemma-3-4b-it",
+ "adapter": "results/gemma_train/5b/checkpoints_kept/epoch-2/adapter",
+ "stage": 6,
+ "prompt_template": "You are indexing an astronomy paper with the Unified Astronomy Thesaurus (UAT).\nRead the title and abstract, then name between 1 and 10 UAT topics: the ones this paper should be indexed under.\n\nTitle: {title}\n\nAbstract: {abstract}\n\nAnswer with the names of between 1 and 10 UAT topics, most confident first, one per line. Output only the list, with no introduction or commentary. If none apply, answer NONE.",
+ "vocabulary_size": 1864,
+ "normalisation_collisions": {
+  "punct": 0,
+  "plural": 0,
+  "stopword": 5,
+  "wordset": 6
+ },
+ "paper_id_pool": "D:\\Users\\LOGIN\\Desktop\\Ilana\\NLP\\NLP\\results\\scibert_full\\scibert_full_top50_val.jsonl",
+ "n_papers": 200,
+ "seed": 42,
+ "constrained_decoding": false,
+ "vocabulary_in_prompt": false,
+ "code": {
+  "commit": "c37d55820cfd5242e1371c3822815ebb5c0bf4b3",
+  "uncommitted_changes": []
+ },
+ "max_new_tokens": 256,
+ "timing_by_batch_size": {
+  "8": {
+   "sec_per_paper": 2.0229948139190674,
+   "peak_reserved_gb": 5.013671875
+  }
+ },
+ "metrics": {
+  "papers": 200,
+  "emitted_lines": 1918,
+  "unique_lines": 558,
+  "mean_cardinality_unique": 2.79,
+  "median_cardinality_unique": 3,
+  "out_of_vocabulary_rate_unique_lines": 0.6290322580645161,
+  "near_miss_rate_of_oov_unique": 0.06267806267806268,
+  "hallucination_rate_of_oov_unique": 0.9373219373219374,
+  "oov_breakdown_unique": {
+   "hallucination": 329,
+   "near_miss_plural": 18,
+   "near_miss_punct": 3,
+   "near_miss_wordset": 1
+  },
+  "mean_cardinality_emitted": 9.59,
+  "mean_cardinality_in_vocab": 1.035,
+  "median_cardinality_emitted": 3,
+  "out_of_vocabulary_rate_lines": 0.5208550573514077,
+  "papers_with_any_oov": 0.875,
+  "near_miss_rate_of_oov": 0.07307307307307308,
+  "hallucination_rate_of_oov": 0.9269269269269269,
+  "near_miss_rate_lines": 0.038060479666319084,
+  "hallucination_rate_lines": 0.48279457768508866,
+  "oov_breakdown": {
+   "hallucination": 926,
+   "near_miss_plural": 69,
+   "near_miss_punct": 3,
+   "near_miss_wordset": 1
+  },
+  "duplicate_rate_lines": 0.7090719499478624,
+  "papers_with_duplicates": 0.185,
+  "looper_mean_emitted": 40.0,
+  "looper_mean_unique": 3.2432432432432434,
+  "empty_output_rate": 0.05,
+  "any_in_vocab_rate": 0.695,
+  "hit_max_new_tokens_rate": 0.1,
+  "mean_new_tokens": 35.74,
+  "micro_precision": 0.4975845410628019,
+  "micro_recall": 0.11586051743532058,
+  "micro_f1": 0.18795620437956206,
+  "mean_gold": 4.445,
+  "in_vocab_band_profile": {
+   "head": 0.1932367149758454,
+   "torso": 0.6908212560386473,
+   "tail": 0.11594202898550725
+  },
+  "in_vocab_band_counts": {
+   "head": 40,
+   "torso": 143,
+   "tail": 24
+  }
+ },
+ "gpu": "NVIDIA GeForce RTX 3060 Ti"
+}

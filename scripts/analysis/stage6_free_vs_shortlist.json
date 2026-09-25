@@ -1,0 +1,127 @@
+{
+ "papers": 200,
+ "vocabulary_size": 1864,
+ "conditions": {
+  "free": {
+   "untouched": {
+    "papers": 200,
+    "mean_cardinality_unique": 9.205,
+    "mean_cardinality_emitted": 9.205,
+    "out_of_vocabulary_rate_unique_lines": 0.6496469310157523,
+    "near_miss_rate_of_oov": 0.030936454849498328,
+    "hallucination_rate_of_oov": 0.9690635451505016,
+    "oov_breakdown_unique": {
+     "hallucination": 1159,
+     "near_miss_punct": 14,
+     "near_miss_plural": 15,
+     "near_miss_stopword": 5,
+     "near_miss_wordset": 3
+    },
+    "duplicate_rate_lines": 0.0,
+    "papers_with_duplicates": 0.0,
+    "micro_precision": 0.2930232558139535,
+    "micro_recall": 0.2125984251968504,
+    "micro_f1": 0.2464146023468058,
+    "mean_gold": 4.445,
+    "in_vocab_band_profile": {
+     "torso": 0.7178294573643411,
+     "head": 0.13178294573643412,
+     "tail": 0.15038759689922482
+    },
+    "in_vocab_band_counts": {
+     "torso": 463,
+     "head": 85,
+     "tail": 97
+    }
+   },
+   "fine-tuned": {
+    "papers": 200,
+    "mean_cardinality_unique": 2.79,
+    "mean_cardinality_emitted": 9.59,
+    "out_of_vocabulary_rate_unique_lines": 0.6290322580645161,
+    "near_miss_rate_of_oov": 0.06267806267806268,
+    "hallucination_rate_of_oov": 0.9373219373219374,
+    "oov_breakdown_unique": {
+     "hallucination": 329,
+     "near_miss_plural": 18,
+     "near_miss_punct": 3,
+     "near_miss_wordset": 1
+    },
+    "duplicate_rate_lines": 0.7090719499478624,
+    "papers_with_duplicates": 0.185,
+    "micro_precision": 0.4975845410628019,
+    "micro_recall": 0.11586051743532058,
+    "micro_f1": 0.18795620437956206,
+    "mean_gold": 4.445,
+    "in_vocab_band_profile": {
+     "head": 0.1932367149758454,
+     "torso": 0.6908212560386473,
+     "tail": 0.11594202898550725
+    },
+    "in_vocab_band_counts": {
+     "head": 40,
+     "torso": 143,
+     "tail": 24
+    }
+   }
+  },
+  "shortlist": {
+   "untouched": {
+    "papers": 200,
+    "mean_cardinality_unique": 9.22,
+    "mean_cardinality_emitted": 9.23,
+    "out_of_vocabulary_rate_unique_lines": 0.04013015184381779,
+    "near_miss_rate_of_oov": 0.02702702702702703,
+    "hallucination_rate_of_oov": 0.972972972972973,
+    "oov_breakdown_unique": {
+     "hallucination": 72,
+     "near_miss_plural": 2
+    },
+    "duplicate_rate_lines": 0.0010834236186348862,
+    "papers_with_duplicates": 0.01,
+    "micro_precision": 0.280225988700565,
+    "micro_recall": 0.5579302587176603,
+    "micro_f1": 0.37307258367807444,
+    "mean_gold": 4.445,
+    "in_vocab_band_profile": {
+     "torso": 0.8090395480225989,
+     "head": 0.08248587570621468,
+     "tail": 0.10847457627118644
+    },
+    "in_vocab_band_counts": {
+     "torso": 1432,
+     "head": 146,
+     "tail": 192
+    }
+   },
+   "fine-tuned": {
+    "papers": 200,
+    "mean_cardinality_unique": 5.8,
+    "mean_cardinality_emitted": 10.63,
+    "out_of_vocabulary_rate_unique_lines": 0.02586206896551724,
+    "near_miss_rate_of_oov": 0.06666666666666667,
+    "hallucination_rate_of_oov": 0.9333333333333333,
+    "oov_breakdown_unique": {
+     "hallucination": 28,
+     "near_miss_plural": 2
+    },
+    "duplicate_rate_lines": 0.4543744120413923,
+    "papers_with_duplicates": 0.25,
+    "micro_precision": 0.3247787610619469,
+    "micro_recall": 0.4128233970753656,
+    "micro_f1": 0.36354631005448246,
+    "mean_gold": 4.445,
+    "in_vocab_band_profile": {
+     "tail": 0.22566371681415928,
+     "torso": 0.6982300884955752,
+     "head": 0.07610619469026549
+    },
+    "in_vocab_band_counts": {
+     "tail": 255,
+     "torso": 789,
+     "head": 86
+    }
+   }
+  }
+ }
+}

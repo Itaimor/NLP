@@ -1,0 +1,23 @@
+Stage 6 sample: 200 validation papers; vocabulary 1864 names
+Both conditions re-parsed from raw_output against the full vocabulary.
+
+                      free/untouched       free/fine-tuned   shortlist/untouched  shortlist/fine-tuned
+unique/paper                    9.21                  2.79                  9.22                  5.80
+emitted/paper                   9.21                  9.59                  9.23                 10.63
+OOV rate                      0.6496                0.6290                0.0401                0.0259
+  halluc of OOV                 0.969                 0.937                 0.973                 0.933
+  near-miss                    0.031                 0.063                 0.027                 0.067
+loop rate                      0.000                 0.185                 0.010                 0.250
+micro P                       0.2930                0.4976                0.2802                0.3248
+micro R                       0.2126                0.1159                0.5579                0.4128
+micro F1                      0.2464                0.1880                0.3731                0.3635
+
+in-vocabulary picks by band (share of picks):
+  head                        0.1318                0.1932                0.0825                0.0761
+  torso                       0.7178                0.6908                0.8090                0.6982
+  tail                        0.1504                0.1159                0.1085                0.2257
+  unbanded                    0.0000                0.0000                0.0000                0.0000
+
+gold topics per paper: 4.45
+
+wrote stage6_free_vs_shortlist.json
