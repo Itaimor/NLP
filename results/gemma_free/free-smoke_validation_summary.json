@@ -1,0 +1,71 @@
+{
+ "arm": "free-smoke",
+ "split": "validation",
+ "model": "google/gemma-3-4b-it",
+ "adapter": null,
+ "stage": 6,
+ "prompt_template": "You are indexing an astronomy paper with the Unified Astronomy Thesaurus (UAT).\nRead the title and abstract, then name between 1 and 10 UAT topics: the ones this paper should be indexed under.\n\nTitle: {title}\n\nAbstract: {abstract}\n\nAnswer with the names of between 1 and 10 UAT topics, most confident first, one per line. Output only the list, with no introduction or commentary. If none apply, answer NONE.",
+ "vocabulary_size": 1864,
+ "normalisation_collisions": {
+  "punct": 0,
+  "plural": 0,
+  "stopword": 5,
+  "wordset": 6
+ },
+ "paper_id_pool": "D:\\Users\\LOGIN\\Desktop\\Ilana\\NLP\\NLP\\results\\scibert_full\\scibert_full_top50_val.jsonl",
+ "n_papers": 8,
+ "seed": 42,
+ "constrained_decoding": false,
+ "vocabulary_in_prompt": false,
+ "code": {
+  "commit": "fda6a6a725f86e13350cfc5bdd4ed49779ded7f0",
+  "uncommitted_changes": [
+   "?? scripts/gemma_free_generation.py"
+  ]
+ },
+ "max_new_tokens": 256,
+ "timing_by_batch_size": {
+  "4": {
+   "sec_per_paper": 0.7318161129951477,
+   "peak_reserved_gb": 3.509765625
+  }
+ },
+ "metrics": {
+  "papers": 8,
+  "emitted_lines": 72,
+  "mean_cardinality_emitted": 9.0,
+  "mean_cardinality_in_vocab": 3.25,
+  "median_cardinality_emitted": 9,
+  "out_of_vocabulary_rate_lines": 0.6388888888888888,
+  "papers_with_any_oov": 1.0,
+  "near_miss_rate_of_oov": 0.021739130434782608,
+  "hallucination_rate_of_oov": 0.9782608695652174,
+  "near_miss_rate_lines": 0.013888888888888888,
+  "hallucination_rate_lines": 0.625,
+  "oov_breakdown": {
+   "hallucination": 45,
+   "near_miss_punct": 1
+  },
+  "duplicate_rate_lines": 0.0,
+  "papers_with_duplicates": 0.0,
+  "empty_output_rate": 0.0,
+  "any_in_vocab_rate": 1.0,
+  "hit_max_new_tokens_rate": 0.0,
+  "mean_new_tokens": 35.5,
+  "micro_precision": 0.2692307692307692,
+  "micro_recall": 0.19444444444444445,
+  "micro_f1": 0.22580645161290322,
+  "mean_gold": 4.5,
+  "in_vocab_band_profile": {
+   "torso": 0.6538461538461539,
+   "head": 0.19230769230769232,
+   "tail": 0.15384615384615385
+  },
+  "in_vocab_band_counts": {
+   "torso": 17,
+   "head": 5,
+   "tail": 4
+  }
+ },
+ "gpu": "NVIDIA GeForce RTX 3060 Ti"
+}
