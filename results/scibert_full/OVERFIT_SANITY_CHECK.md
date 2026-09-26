@@ -6,7 +6,7 @@ As required by the course guidelines and project work plan (Stage 3), before emb
 ## Experimental Setup
 - **Model**: `allenai/scibert_scivocab_uncased`
 - **Subset Size**: 32 randomly selected papers from the training split
-- **Labels**: Multi-label binary targets across all 2,079 UAT concepts
+- **Labels**: Multi-label binary targets across all 1,864 UAT concepts
 - **Optimizer**: AdamW (`lr=2e-5` backbone, `1e-4` head)
 - **Loss**: Binary Cross-Entropy with Logits (`BCEWithLogitsLoss`)
 - **Number of Steps**: 150 optimization steps
