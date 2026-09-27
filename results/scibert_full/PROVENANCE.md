@@ -7,7 +7,7 @@ prior — val coverage@50 0.291, tail 0/2,787 — and must not be used).
 | file | status | note |
 |---|---|---|
 | `scibert_full_val.parquet` (blob `d7dc410d5af5`) | **sound** | 2,855 × 1,864; ids == `split.json`; cols == `label_order.json`; val coverage@50 0.829 (head 0.980 / torso 0.908 / tail 0.528); max prob 0.997; random-pair top-50 Jaccard 0.067 |
-| `scibert_full_test.parquet` (blob `72d82fc513c6`) | **sound** | 3,025 × 1,864; coverage@50 0.859 (tail 0.648) |
+| `scibert_full_test.parquet` (blob `72d82fc513c6`) | **sound** | 3,025 × 1,864; coverage@50 0.859 (head 0.982 / torso 0.900 / tail 0.648) — head/torso added 27 Sept, recomputed 1328/1353 and 8346/9269 from this blob and cross-checked against `scibert_full_top50_test.jsonl` (identical ordered top-50, no rank-50 ties) |
 | `test_predictions_scibert_full.npz` | **regenerated 22 Sept — consistent with the JSON** | binary predictions at taus 0.92 / 0.82 / 0.54; **5.48 per paper** (was 15.3 per paper at the truncated 0.54/0.54/0.54) |
 | `tau_scibert_full.json`, `test_results_scibert_full.json` | **re-scored 22 Sept — reportable** | Regenerated under the corrected `TAU_CANDIDATES` grid (0.0005–0.98, a strict superset of the old 0.005–0.54). Chosen taus are now **0.92 / 0.82 / 0.54, all interior** — the search is no longer truncated. Test micro-F1 head **0.5518**, torso **0.3566**, tail **0.2150**; predictions/paper 15.3 → **5.48** (gold 4.38 on test). Reproduces the 20 Sept chair re-run exactly. |
 
