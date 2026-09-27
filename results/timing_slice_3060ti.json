@@ -1,0 +1,67 @@
+{
+  "what_this_is": "The 200-step timing slice on the RTX 3060 Ti that WORK_PLAN.md section 8 asks for per Stage 3 arm. Both SciBERT arms were trained on Apple Silicon (MPS), so this is the only measurement of them on the project's CUDA device. It is a timing benchmark only: no checkpoint from these runs is used anywhere, and no reported metric comes from them.",
+  "run_datetime": "27/09/2026 19:30",
+  "commit": "bac3ef5fb71a6fa700c97224d947fd0d78e27567",
+  "produced_by": "scripts/SciBERT_experiment.py --mode {full,lora} --device cuda --max-steps 200 --num-epochs 1 --force-restart",
+  "device": {
+    "name": "NVIDIA GeForce RTX 3060 Ti",
+    "backend": "cuda",
+    "torch": "2.14.0+cu130",
+    "alloc_conf": "expandable_segments:True"
+  },
+  "shared_settings": {
+    "seed": 42,
+    "batch_size": 8,
+    "eval_batch_size": 16,
+    "max_seq_length": 512,
+    "loss": "BCEWithLogitsLoss",
+    "pos_weight": 30.0,
+    "steps_measured": 200,
+    "steps_per_full_epoch": 1978
+  },
+  "arms": {
+    "scibert_full": {
+      "learning_rate_backbone": 2e-05,
+      "learning_rate_classifier": 0.0001,
+      "trainable_parameters": 111351880,
+      "steps": 200,
+      "elapsed_seconds": 76.79,
+      "seconds_per_step": 0.3839,
+      "peak_cuda_allocated_mb": 3878.5,
+      "projected_minutes_per_epoch": 12.7
+    },
+    "scibert_lora": {
+      "learning_rate": 0.0001,
+      "lora": {
+        "r": 8,
+        "lora_alpha": 16,
+        "target_modules": ["query", "value"],
+        "modules_to_save": ["classifier"]
+      },
+      "trainable_parameters": 1728328,
+      "total_parameters": 113080208,
+      "trainable_percentage": 1.5284,
+      "steps": 200,
+      "elapsed_seconds": 58.38,
+      "seconds_per_step": 0.2919,
+      "peak_cuda_allocated_mb": 2539.0,
+      "projected_minutes_per_epoch": 9.6
+    }
+  },
+  "comparison_with_the_training_machine": {
+    "note": "The reported runs trained on MPS. Wall-clock per step is directly comparable; the memory figures are NOT. peak_cuda_allocated_mb is what the CUDA allocator held, whereas the MPS runs recorded an estimate of shared unified memory (~10 GB), which includes memory the allocator did not own.",
+    "scibert_full": {
+      "mps_seconds_per_step": 1.775,
+      "cuda_seconds_per_step": 0.3839,
+      "speedup": 4.62,
+      "source_of_mps_figure": "results/scibert_full/cost.json"
+    },
+    "scibert_lora": {
+      "mps_seconds_per_step": 2.666,
+      "cuda_seconds_per_step": 0.2919,
+      "speedup": 9.13,
+      "source_of_mps_figure": "results/scibert_lora/run2/cost.json"
+    }
+  },
+  "not_measured_here": "The majority and TF-IDF baselines take no gradient steps. Both are sklearn fits (OneVsRestClassifier over LogisticRegression, scripts/baselines.py:384-393), so a per-step figure does not exist for them and section 8's per-arm wording does not apply. Their compute cost is a single fit wall-clock plus peak host memory, which belongs in their own run log."
+}

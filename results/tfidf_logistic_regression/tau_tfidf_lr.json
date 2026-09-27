@@ -1,15 +1,21 @@
 {
-    "run_datetime": "22/09/2026 18:03",
+    "run_datetime": "27/09/2026 19:37",
+    "commit": "f4846c7602b8a16e5c37b53d1a1efd2e291d0d5d",
+    "has_tracked_changes": false,
+    "dirty_scope": "tracked *.py sources, excluding result artefacts",
     "taus": {
         "head": 0.0005,
         "torso": 0.0005,
         "tail": 0.005
     },
     "objective": "Maximise each band's validation Micro-F1 over TAU_CANDIDATES (corrected grid, 0.0005-0.98, spanning both extremes).",
+    "on_grid_edge": {
+        "head": "floor",
+        "torso": "floor",
+        "tail": null
+    },
     "validation_file": "tfidf_lr_val.parquet",
     "validation_checksum": "9bce08088e5b563f71c568504a10b18d425e16c68cf7df0dc22cb2663a8e25a3",
-    "commit": "a46ecbbbee0a9451373f2fc48f66854e9dc916e3",
-    "has_tracked_changes": true,
     "tau_sweep": {
         "head": [
             {
