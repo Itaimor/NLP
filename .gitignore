@@ -11,6 +11,7 @@ artifacts/
 results/**/adapter/
 results/shortlists/
 results/**/checkpoints/
+results/**/lora/*.pt
 
 # Council deliberation (framed questions, advisor responses, cross-examinations,
 # verdicts, docket). Internal working notes, not part of the submission.
