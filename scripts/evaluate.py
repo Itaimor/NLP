@@ -13,7 +13,6 @@ from datetime import datetime
 # Global Variable:
 SHIFT = "   "
 BANDS = ("head", "torso", "tail")
-RUN_DATATIME = datetime.now().strftime("%d/%m/%Y %H:%M")
 # The grid must span both extremes: an arm whose best tau lands on the first or
 # last candidate has not had a threshold selected, it has had the search truncated.
 # SciBERT-full pinned at the old 0.54 ceiling (validation Micro-F1 still rising there)
@@ -88,6 +87,74 @@ def validate_evaluation_inputs(
 
 
 ## Section: Loading ##
+def file_checksum(path):
+    """
+    Calculates the SHA-256 fingerprint of a file, reading it in chunks.
+
+    Input:
+    --- path: path to an existing file.
+    Output:
+    --- the hexadecimal digest as a string.
+    """
+
+    checksum = hashlib.sha256()
+
+    with Path(path).open("rb") as file:
+        for chunk in iter(lambda: file.read(1024 * 1024), b""):
+            checksum.update(chunk)
+
+    return checksum.hexdigest()
+
+
+def run_provenance():
+    """
+    Collects the stamp that ties a saved artefact to the code that produced it.
+
+    The timestamp is read here rather than at import, so that two arms scored in
+    one session do not both carry the moment the module was loaded.
+
+    The Git lookup is deliberately forgiving. A scoring run that produced correct
+    numbers must not be lost because git is absent from PATH or the tree was
+    copied without its history, so a failure records None instead of raising.
+
+    Output:
+    --- dictionary containing run_datetime, commit and has_tracked_changes.
+        commit and has_tracked_changes are None when Git could not be read.
+    """
+
+    stamp = {
+        "run_datetime": datetime.now().strftime("%d/%m/%Y %H:%M"),
+        "commit": None,
+        "has_tracked_changes": None,
+    }
+
+    project_directory = Path(__file__).resolve().parent
+
+    try:
+        # Reads the Git commit of the project containing evaluate.py.
+        stamp["commit"] = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"],
+            cwd=project_directory,
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+
+        # Checks whether tracked files contain changes outside that commit.
+        tracked_changes = subprocess.check_output(
+            ["git", "status", "--porcelain", "--untracked-files=no"],
+            cwd=project_directory,
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+
+        stamp["has_tracked_changes"] = bool(tracked_changes)
+
+    except (OSError, subprocess.SubprocessError):
+        pass
+
+    return stamp
+
+
 def save_tau_selection(
     chosen_taus,
     tau_sweep,
@@ -117,40 +184,37 @@ def save_tau_selection(
     validation_path = output_dir / validation_filename
     output_path = output_dir / f"tau_{arm_name}.json"
 
-    # Calculates a SHA-256 fingerprint of the saved validation score file.
-    checksum = hashlib.sha256()
-    with validation_path.open("rb") as file:
-        for chunk in iter(lambda: file.read(1024 * 1024), b""):
-            checksum.update(chunk)
+    # Records, per band, whether the chosen threshold sits on an end of the grid.
+    # Derived from the sweep rather than passed in, so that choose_tau keeps its
+    # two-value return and none of its call sites change. A band reading "floor"
+    # or "ceiling" has either a degenerate model or a truncated search, and must
+    # not be reported until somebody has decided which.
+    on_grid_edge = {}
 
-    # Reads the Git commit of the project containing evaluate.py.
-    project_directory = Path(__file__).resolve().parent
-    commit = subprocess.check_output(
-        ["git", "rev-parse", "HEAD"],
-        cwd=project_directory,
-        text=True,
-    ).strip()
+    for band in BANDS:
+        band_sweep = tau_sweep.get(band) or []
+        chosen = float(chosen_taus[band])
+        edge = None
 
-    # Checks whether tracked files contain changes outside that commit.
-    tracked_changes = subprocess.check_output(
-        ["git", "status", "--porcelain", "--untracked-files=no"],
-        cwd=project_directory,
-        text=True,
-    ).strip()
+        if band_sweep:
+            if chosen == float(band_sweep[0]["tau"]):
+                edge = "floor"
+            elif chosen == float(band_sweep[-1]["tau"]):
+                edge = "ceiling"
 
+        on_grid_edge[band] = edge
 
     # Collects the selected thresholds and their selection metadata.
     record = {
-        "run_datetime": RUN_DATATIME,
+        **run_provenance(),
         "taus": {
             band: float(chosen_taus[band])
             for band in BANDS
         },
         "objective": objective,
+        "on_grid_edge": on_grid_edge,
         "validation_file": validation_filename,
-        "validation_checksum": checksum.hexdigest(),
-        "commit": commit,
-        "has_tracked_changes": bool(tracked_changes),
+        "validation_checksum": file_checksum(validation_path),
         "tau_sweep": tau_sweep,
     }
 
@@ -167,6 +231,7 @@ def save_test_results(
     output_directory,
     paper_ids,
     label_order,
+    test_filename=None,
 ):
     """
     Saves test metrics as JSON and predictions as a compressed NumPy file.
@@ -174,12 +239,25 @@ def save_test_results(
     Per-label TP, FP and FN counts are saved together with their label IDs.
     Labels whose count is zero are omitted.
 
+    The record carries the same provenance stamp as tau_<arm_name>.json, so that
+    a results-table cell can be traced to the commit that produced it.
+
+    ALIGNMENT, the assumption this function cannot check for you: rows of
+    test_results["predictions"] are matched to paper_ids POSITIONALLY, and the
+    caller is responsible for having built the score matrix and the gold matrix
+    from the same sequence of papers. The checks below catch a length mismatch
+    and duplicate identifiers, which is every misalignment that leaves a visible
+    trace, but a caller that silently reorders one matrix and not the other
+    produces numbers this function will accept.
+
     Inputs:
     --- test_results: dictionary returned by evaluate_test, including predictions.
     --- arm_name: experiment name, such as "majority" or "scibert_full".
     --- output_directory: directory for saving the results.
     --- paper_ids: paper identifiers in prediction-row order.
     --- label_order: UAT IDs in prediction-column order.
+    --- test_filename: optional test score filename inside output_directory. When
+        given, its SHA-256 is recorded, pinning which table produced the metrics.
 
     Output: None.
     """
@@ -188,7 +266,7 @@ def save_test_results(
     predictions = np.asarray(test_results["predictions"])
 
     metrics = {
-        "run_datetime": RUN_DATATIME,
+        **run_provenance(),
         **{
             key: value
             for key, value in test_results.items()
@@ -201,6 +279,19 @@ def save_test_results(
         raise ValueError(
             "Prediction shape must match paper IDs and label order."
         )
+
+    # Duplicate identifiers mean the rows cannot be attributed to papers, which
+    # is the misalignment worth refusing rather than recording.
+    if len(set(map(str, paper_ids))) != len(paper_ids):
+        raise ValueError(
+            "paper_ids must be unique, otherwise prediction rows cannot be "
+            "attributed to papers."
+        )
+
+    if len(set(map(str, label_order))) != len(label_order):
+        raise ValueError("label_order must not contain duplicate label IDs.")
+
+    metrics["row_alignment"] = "positional, paper_ids given in prediction-row order"
 
     if not np.isin(predictions, [0, 1]).all():
         raise ValueError("Predictions must contain only 0 and 1.")
@@ -333,17 +424,50 @@ def evaluate_thresholds(
         if micro_f1 > best_micro_f1:
             best_tau = float(tau)
             best_micro_f1 = micro_f1
+
+    # Enforces the rule stated at the top of this file. A winner sitting on the
+    # first or last candidate means the search was truncated, not that a
+    # threshold was selected, so the condition is recorded rather than left to a
+    # reader to notice. TF-IDF+LR's head and torso legitimately pin at the floor
+    # because the model is degenerate there, which is why this flags and does not
+    # raise.
+    on_grid_edge = None
+
+    if best_tau == float(tau_candidates[0]):
+        on_grid_edge = "floor"
+    elif best_tau == float(tau_candidates[-1]):
+        on_grid_edge = "ceiling"
+
+    if on_grid_edge is not None:
+        print(
+            f"{SHIFT}WARNING: best_tau {best_tau} sits on the grid "
+            f"{on_grid_edge}. Either the model is degenerate at that threshold "
+            "or the grid is truncated. Check before reporting this arm."
+        )
+
     return {
         "best_tau": best_tau,
         "best_micro_f1": best_micro_f1,
         "tau_sweep": tau_sweep,
         "tie_break": "lowest tau wins on equal Micro-F1",
+        "on_grid_edge": on_grid_edge,
     }
 
 
 def choose_tau(val_probs, val_labels, band_map):
     """
     Chooses one tau per band using validation Micro-F1.
+
+    DENOMINATOR WARNING: the search below runs only over the labels that occur at
+    least once in validation, because a label with no positive instance cannot
+    inform a threshold. evaluate_test then scores EVERY label of the band,
+    present or not. The two therefore sit on different denominators. Under the
+    primary band map the tail is selected over 1,062 validation-present columns
+    and scored over all 1,469, so best_micro_f1 in tau_<arm>.json and micro_f1 in
+    test_results_<arm>.json ARE NOT COMPARABLE and must never be tabled beside
+    each other. This is deliberate and is not to be "fixed" by aligning them:
+    changing either denominator re-selects every threshold and moves every
+    number already reported in the paper.
 
     Inputs:
     --- val_probs: score matrix [num_papers, num_labels], NumPy or PyTorch.
@@ -450,6 +574,14 @@ def evaluate_test(
     Output:
     --- dictionary containing per-band metrics, overall metrics, ranking metrics,
         head-tail delta, prediction counts and per-label TP/FP/FN.
+
+    DENOMINATOR WARNING: every label of a band is scored here, including labels
+    with no test instance, while choose_tau selected the threshold over the
+    validation-present labels only. See the matching note on choose_tau. The two
+    micro-F1 figures sit on different denominators and must not be tabled side by
+    side. macro_f1_all_labels and macro_f1_present_labels are both reported for
+    the same reason, because the published work this is compared against does not
+    state which convention it uses.
     """
 
     # Converts inputs to NumPy before calculating test metrics.
