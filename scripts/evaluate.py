@@ -117,15 +117,23 @@ def run_provenance():
     numbers must not be lost because git is absent from PATH or the tree was
     copied without its history, so a failure records None instead of raising.
 
+    has_tracked_changes covers tracked SOURCE files only. Scoring several arms in
+    one pass makes the first arm's output files dirty the tree, so a flag counting
+    every tracked change reported "dirty" for every arm after the first and said
+    nothing about whether the code had moved. dirty_scope records that limit
+    inside the artefact, so a reader does not have to know this.
+
     Output:
-    --- dictionary containing run_datetime, commit and has_tracked_changes.
-        commit and has_tracked_changes are None when Git could not be read.
+    --- dictionary containing run_datetime, commit, has_tracked_changes and
+        dirty_scope. commit and has_tracked_changes are None when Git could not
+        be read.
     """
 
     stamp = {
         "run_datetime": datetime.now().strftime("%d/%m/%Y %H:%M"),
         "commit": None,
         "has_tracked_changes": None,
+        "dirty_scope": "tracked *.py sources, excluding result artefacts",
     }
 
     project_directory = Path(__file__).resolve().parent
@@ -139,7 +147,10 @@ def run_provenance():
             stderr=subprocess.DEVNULL,
         ).strip()
 
-        # Checks whether tracked files contain changes outside that commit.
+        # Checks whether tracked SOURCE files contain changes outside that commit.
+        # Filtered in Python rather than with a Git pathspec, because this runs
+        # with cwd inside scripts/ and a relative pathspec would miss the rest of
+        # the tree.
         tracked_changes = subprocess.check_output(
             ["git", "status", "--porcelain", "--untracked-files=no"],
             cwd=project_directory,
@@ -147,7 +158,13 @@ def run_provenance():
             stderr=subprocess.DEVNULL,
         ).strip()
 
-        stamp["has_tracked_changes"] = bool(tracked_changes)
+        changed_sources = [
+            line
+            for line in tracked_changes.splitlines()
+            if line.strip().endswith(".py")
+        ]
+
+        stamp["has_tracked_changes"] = bool(changed_sources)
 
     except (OSError, subprocess.SubprocessError):
         pass
