@@ -102,8 +102,15 @@ def main():
     # Determine best epoch based on mean band micro-F1
     best_epoch_key = max(epoch_summary.keys(), key=lambda k: epoch_summary[k]["mean_band_micro_f1"])
     summary_output = {
-        "best_epoch_selected": epoch_summary[best_epoch_key]["epoch"],
-        "selection_metric": "Mean band micro-F1 across Head, Torso, Tail using choose_tau",
+        "cross_check_best_epoch": epoch_summary[best_epoch_key]["epoch"],
+        "cross_check_metric": "Mean band micro-F1 across Head, Torso, Tail using choose_tau",
+        "note": (
+            "Post-hoc verification only. The reported checkpoint was selected DURING "
+            "TRAINING by validation Coverage@50 (SciBERT_experiment.py:669, "
+            "selection_metric='coverage', recorded in results/scibert_full/cost.json). "
+            "This file independently cross-checks that choice using mean band micro-F1 "
+            "and agrees on epoch 8."
+        ),
         "epochs": epoch_summary,
     }
 

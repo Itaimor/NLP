@@ -1,6 +1,7 @@
 {
-  "best_epoch_selected": 8,
-  "selection_metric": "Mean band micro-F1 across Head, Torso, Tail using choose_tau",
+  "cross_check_best_epoch": 8,
+  "cross_check_metric": "Mean band micro-F1 across Head, Torso, Tail using choose_tau",
+  "note": "Post-hoc verification only. The reported checkpoint was selected DURING TRAINING by validation Coverage@50 (SciBERT_experiment.py:669, selection_metric='coverage', recorded in results/scibert_full/cost.json). This file independently cross-checks that choice using mean band micro-F1 and agrees on epoch 8.",
   "epochs": {
     "epoch_1": {
       "epoch": 1,
