@@ -1,0 +1,56 @@
+{
+  "what": "validation coverage@50 per band, per saved epoch",
+  "depth": 50,
+  "basis": "training band map (primary), 2,855 validation papers",
+  "verified_against": "results/scibert_full/PROVENANCE.md epoch-8 row",
+  "epochs": {
+    "1": {
+      "head": 0.996,
+      "torso": 0.5062,
+      "tail": 0.0032,
+      "overall": 0.4423
+    },
+    "2": {
+      "head": 0.9794,
+      "torso": 0.8024,
+      "tail": 0.1356,
+      "overall": 0.6691
+    },
+    "3": {
+      "head": 0.9841,
+      "torso": 0.8631,
+      "tail": 0.3046,
+      "overall": 0.7487
+    },
+    "4": {
+      "head": 0.9786,
+      "torso": 0.884,
+      "tail": 0.4126,
+      "overall": 0.7866
+    },
+    "5": {
+      "head": 0.981,
+      "torso": 0.8984,
+      "tail": 0.4815,
+      "overall": 0.8122
+    },
+    "6": {
+      "head": 0.9833,
+      "torso": 0.9027,
+      "tail": 0.5041,
+      "overall": 0.8205
+    },
+    "7": {
+      "head": 0.9818,
+      "torso": 0.9074,
+      "tail": 0.5224,
+      "overall": 0.8276
+    },
+    "8": {
+      "head": 0.9802,
+      "torso": 0.9078,
+      "tail": 0.5278,
+      "overall": 0.8289
+    }
+  }
+}
