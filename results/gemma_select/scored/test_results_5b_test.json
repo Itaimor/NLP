@@ -1,5 +1,8 @@
 {
-    "run_datetime": "22/09/2026 18:05",
+    "run_datetime": "28/09/2026 11:02",
+    "commit": "126040d68c4b86a23209da17a37af689fb0ea53b",
+    "has_tracked_changes": true,
+    "dirty_scope": "tracked *.py sources, excluding result artefacts",
     "per_band": {
         "head": {
             "tau": 0.5,
@@ -9437,5 +9440,6 @@
         "empty_output_rate": 0.0,
         "off_list_rate_lines": 0.03985912343470483,
         "papers_with_off_list": 0.11702479338842975
-    }
+    },
+    "row_alignment": "positional, paper_ids given in prediction-row order"
 }
