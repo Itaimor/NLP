@@ -3,6 +3,7 @@ import os
 import sys
 import json
 import random
+import argparse
 
 from pathlib import Path
 
@@ -20,8 +21,9 @@ os.environ.setdefault(
     str(PROJECT_ROOT / ".hf_cache"),
 )
 
-# Allows imports starting from the project root:
+# Allows imports starting from the project root and scripts directory:
 sys.path.insert(0, str(PROJECT_ROOT))
+sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 # Data-loading and splitting imports:
 from datasets import load_dataset, concatenate_datasets
@@ -31,7 +33,13 @@ from iterstrat.ml_stratifiers import MultilabelStratifiedShuffleSplit
 # Project imports:
 from data.build_split import load_split
 from EDA_Analysis import EDA_Analysis
-from baselines import run_majority_baseline, run_tfidf_logistic_regression_baseline
+from baselines import (
+    run_majority_baseline,
+    run_tfidf_logistic_regression_baseline,
+    rescore_encoder_from_disk,
+)
+from score_gemma import score as score_gemma_picks
+import evaluate as evaluate_module
 
 # Global variables:
 SEED = 42
@@ -297,71 +305,226 @@ def load_train_band_map(label_order):
     return column_band_map
 
 
-def main(chosen_seed):
-    """  Runs the complete project pipeline.  """
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Run or rescore NLP project models and baselines pipeline.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument(
+        "--arm",
+        choices=["all", "majority", "tfidf", "scibert_full", "scibert_lora", "gemma", "rescore_all"],
+        default="all",
+        help="Model arm to run or rescore.",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=SEED,
+        help="Random seed for deterministic execution.",
+    )
+    parser.add_argument(
+        "--eda",
+        action="store_true",
+        help="Run exploratory data analysis (EDA).",
+    )
+    parser.add_argument(
+        "--rescore",
+        action="store_true",
+        help="Re-score baselines from committed §6 Parquet tables instead of retraining.",
+    )
+    return parser.parse_args()
 
-    set_seed(chosen_seed)
+
+def print_table_row(name, results):
+    if not results or "per_band" not in results:
+        print(f"{name:30s} {'N/A':>8s} {'N/A':>8s} {'N/A':>8s} {'N/A':>8s} {'N/A':>12s}")
+        return
+    head_f1 = results["per_band"]["head"]["micro_f1"]
+    torso_f1 = results["per_band"]["torso"]["micro_f1"]
+    tail_f1 = results["per_band"]["tail"]["micro_f1"]
+    overall_f1 = results.get("overall", {}).get("micro_f1", 0.0)
+    preds_per_paper = results.get("mean_predictions_per_paper")
+    if preds_per_paper is None:
+        preds_per_paper = results.get("gemma_diagnostics", {}).get("mean_picks", 0.0)
+    print(f"{name:30s} {head_f1:8.4f} {torso_f1:8.4f} {tail_f1:8.4f} {overall_f1:8.4f} {preds_per_paper:12.2f}")
+
+
+def main(args=None, chosen_seed=None):
+    """
+    Runs the complete project pipeline or re-scores models directly from disk.
+    Satisfies §8's requirement: 'regenerated from the files by one command,
+    by someone who did not train the model', running on CPU in seconds.
+    """
+    if isinstance(args, int):
+        chosen_seed = args
+        args = None
+
+    if args is None:
+        args = parse_args()
+
+    if chosen_seed is not None:
+        args.seed = chosen_seed
+
+    set_seed(args.seed)
 
     # Loads datasets according to split.json file:
     datasets_dict = load_dataset_from_split_json_file()
 
-    # Runs EDA analysis:
-    # EDA_Analysis(datasets_dict)
+    # Runs EDA analysis if requested:
+    if args.eda:
+        print("\nRunning Exploratory Data Analysis (EDA):")
+        eda_save_dir = RESULT_PATH / "eda_plots"
+        EDA_Analysis(datasets_dict, save_dir=eda_save_dir)
 
-    # For running baselines and models:
-    # Loads label_order.json and band_map file from data directory
+    # Loads label_order.json and band_map file from data directory:
     label_order = load_label_order()
     train_band_map = load_train_band_map(label_order)
 
-    # Baselines:
-    # Runs majority baseline:
-    print("\nRuns Majority Baseline:")
-    print("----------------------")
-    majority_path = RESULT_PATH / "majority_baseline"
-    run_majority_baseline(
-        train_df=datasets_dict["train"],
-        validation_df=datasets_dict["validation"],
-        test_df=datasets_dict["test"],
-        label_order=label_order,
-        train_band_map=train_band_map,
-        save_directory=majority_path,
-    )
+    table_rows = {}
 
-    print("\nMajority Baseline is completed.")
+    # 1. Majority baseline:
+    if args.arm in ("all", "majority", "rescore_all"):
+        majority_path = RESULT_PATH / "majority_baseline"
+        if args.rescore or args.arm == "rescore_all":
+            print("\nRe-scoring Majority Baseline from §6 tables:")
+            table_rows["Majority prior"] = rescore_encoder_from_disk(
+                arm_name="majority",
+                results_dir=majority_path,
+                val_df=datasets_dict["validation"],
+                test_df=datasets_dict["test"],
+                label_order=label_order,
+                band_map=train_band_map,
+            )
+        else:
+            print("\nRunning Majority Baseline:")
+            table_rows["Majority prior"] = run_majority_baseline(
+                train_df=datasets_dict["train"],
+                validation_df=datasets_dict["validation"],
+                test_df=datasets_dict["test"],
+                label_order=label_order,
+                train_band_map=train_band_map,
+                save_directory=majority_path,
+            )
+        print("Majority Baseline is completed.")
 
+    # 2. TF-IDF + Logistic Regression:
+    if args.arm in ("all", "tfidf", "rescore_all"):
+        tfidf_path = RESULT_PATH / "tfidf_logistic_regression"
+        if args.rescore or args.arm == "rescore_all":
+            print("\nRe-scoring TF-IDF + Logistic Regression from §6 tables:")
+            table_rows["TF-IDF + LR"] = rescore_encoder_from_disk(
+                arm_name="tfidf_lr",
+                results_dir=tfidf_path,
+                val_df=datasets_dict["validation"],
+                test_df=datasets_dict["test"],
+                label_order=label_order,
+                band_map=train_band_map,
+            )
+        else:
+            print("\nRunning TF-IDF + Logistic Regression Baseline:")
+            table_rows["TF-IDF + LR"] = run_tfidf_logistic_regression_baseline(
+                train_df=datasets_dict["train"],
+                validation_df=datasets_dict["validation"],
+                test_df=datasets_dict["test"],
+                label_order=label_order,
+                train_band_map=train_band_map,
+                save_directory=tfidf_path,
+            )
+        print("TF-IDF + Logistic Regression Baseline is completed.")
 
-    # Runs TF-IDF + Logistic Regression:
-    print("\nRuns TF-IDF + Logistic Regression Baseline:")
-    print("--------------------------------------------")
-    majority_path = RESULT_PATH / "tfidf_logistic_regression"
-    run_tfidf_logistic_regression_baseline(
-        train_df=datasets_dict["train"],
-        validation_df=datasets_dict["validation"],
-        test_df=datasets_dict["test"],
-        label_order=label_order,
-        train_band_map=train_band_map,
-        save_directory=majority_path,
-    )
+    # 3. SciBERT - full (re-scoring from committed §6 tables):
+    if args.arm in ("all", "scibert_full", "rescore_all"):
+        print("\nRe-scoring SciBERT-full from committed §6 tables:")
+        scibert_full_path = RESULT_PATH / "scibert_full"
+        table_rows["SciBERT-alone (tuned)"] = rescore_encoder_from_disk(
+            arm_name="scibert_full",
+            results_dir=scibert_full_path,
+            val_df=datasets_dict["validation"],
+            test_df=datasets_dict["test"],
+            label_order=label_order,
+            band_map=train_band_map,
+        )
+        print("SciBERT-full re-scoring is completed.")
 
-    print("\nTF-IDF + Logistic Regression Baseline is completed.")
+    # 4. SciBERT - LoRA (re-scoring from committed §6 tables):
+    if args.arm in ("all", "scibert_lora", "rescore_all"):
+        print("\nRe-scoring SciBERT-LoRA:")
+        scibert_lora_path = RESULT_PATH / "scibert_lora"
+        lora_val_parquet = scibert_lora_path / "scibert_lora_val.parquet"
+        if lora_val_parquet.is_file():
+            table_rows["SciBERT-LoRA (tuned)"] = rescore_encoder_from_disk(
+                arm_name="scibert_lora",
+                results_dir=scibert_lora_path,
+                val_df=datasets_dict["validation"],
+                test_df=datasets_dict["test"],
+                label_order=label_order,
+                band_map=train_band_map,
+            )
+        else:
+            # Fallback to existing test_results JSON if parquet tables haven't been exported yet
+            lora_results_json = scibert_lora_path / "run2" / "lora" / "test_results_scibert_lora.json"
+            if lora_results_json.is_file():
+                with open(lora_results_json, "r", encoding="utf-8") as f:
+                    table_rows["SciBERT-LoRA (tuned)"] = json.load(f)
+                print("  (Loaded existing results from run2/lora/test_results_scibert_lora.json; export Parquet in Package 3)")
+            else:
+                print(f"  Warning: SciBERT-LoRA artifacts not found in {scibert_lora_path}")
+        print("SciBERT-LoRA processing is completed.")
 
-    # Runs SciBert - full
-    # TODO
+    # 5. Gemma (re-scoring from committed picks files):
+    if args.arm in ("all", "gemma", "rescore_all"):
+        print("\nRe-scoring Gemma arms from committed picks files:")
+        gemma_dir = RESULT_PATH / "gemma_select"
+        scored_dir = gemma_dir / "scored"
+        scored_dir.mkdir(parents=True, exist_ok=True)
 
-    # Runs SciBERT - LORA
-    # TODO
+        # 5a: Untuned Gemma 2B
+        picks_5a = gemma_dir / "5a_test.jsonl"
+        if picks_5a.is_file():
+            res_5a, pids_5a, ord_5a = score_gemma_picks(str(picks_5a), "test")
+            evaluate_module.save_test_results(
+                test_results=res_5a,
+                arm_name="5a_test",
+                output_directory=scored_dir,
+                paper_ids=pids_5a,
+                label_order=ord_5a,
+            )
+            table_rows["Gemma, untuned"] = res_5a
+        elif (scored_dir / "test_results_5a_test.json").is_file():
+            with open(scored_dir / "test_results_5a_test.json", "r", encoding="utf-8") as f:
+                table_rows["Gemma, untuned"] = json.load(f)
 
-    # Runs Gemma
-    # TODO
+        # 5b: Fine-tuned Gemma (QLoRA)
+        picks_5b = gemma_dir / "5b_test.jsonl"
+        if picks_5b.is_file():
+            res_5b, pids_5b, ord_5b = score_gemma_picks(str(picks_5b), "test")
+            evaluate_module.save_test_results(
+                test_results=res_5b,
+                arm_name="5b_test",
+                output_directory=scored_dir,
+                paper_ids=pids_5b,
+                label_order=ord_5b,
+            )
+            table_rows["Gemma, fine-tuned (QLoRA)"] = res_5b
+        elif (scored_dir / "test_results_5b_test.json").is_file():
+            with open(scored_dir / "test_results_5b_test.json", "r", encoding="utf-8") as f:
+                table_rows["Gemma, fine-tuned (QLoRA)"] = json.load(f)
 
-    # Runs another experiment if needed
-    # TODO
+        print("Gemma re-scoring is completed.")
 
+    # Prints summary Table 1:
+    if table_rows:
+        print("\n" + "=" * 80)
+        print("TABLE 1: TEST-SET RESULTS SUMMARY")
+        print("=" * 80)
+        print(f"{'System':30s} {'Head':>8s} {'Torso':>8s} {'Tail':>8s} {'Overall':>8s} {'Preds/Paper':>12s}")
+        print("-" * 80)
+        for name, res in table_rows.items():
+            print_table_row(name, res)
+        print("=" * 80 + "\n")
 
-    return 0  # Success
-
-
+    return 0
 
 
 if __name__ == "__main__":
-    main(chosen_seed=SEED)
+    main()
