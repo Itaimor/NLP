@@ -106,6 +106,7 @@ def rescore_encoder_from_disk(
     val_parquet_path=None,
     test_parquet_path=None,
     objective="Maximise each band's validation Micro-F1 over the fixed TAU candidates.",
+    save_results=False,
 ):
     """
     Re-scores an encoder arm directly from its saved §6 Parquet tables on disk.
@@ -208,16 +209,17 @@ def rescore_encoder_from_disk(
     )
 
     # 4. Saves tau selection metadata and validation file checksum:
-    print(f"Saving selected validation TAUs to tau_{arm_name}.json ... ", end="")
-    save_tau_selection(
-        chosen_taus=chosen_taus,
-        tau_sweep=tau_sweep,
-        arm_name=arm_name,
-        objective=objective,
-        validation_filename=val_path.name,
-        output_directory=results_dir,
-    )
-    print("Done.")
+    if save_results:
+        print(f"Saving selected validation TAUs to tau_{arm_name}.json ... ", end="")
+        save_tau_selection(
+            chosen_taus=chosen_taus,
+            tau_sweep=tau_sweep,
+            arm_name=arm_name,
+            objective=objective,
+            validation_filename=val_path.name,
+            output_directory=results_dir,
+        )
+        print("Done.")
 
     # 5. Reads test Parquet from disk:
     print(f"Reading test Parquet from {test_path.name} ... ", end="")
@@ -259,16 +261,17 @@ def rescore_encoder_from_disk(
     )
 
     # 8. Saves test results and predictions (with test filename for checksum):
-    print(f"Saving test results for {arm_name} ... ", end="")
-    save_test_results(
-        test_results=test_results,
-        arm_name=arm_name,
-        output_directory=results_dir,
-        paper_ids=paper_ids,
-        label_order=label_order,
-        test_filename=test_path.name,
-    )
-    print("Done.")
+    if save_results:
+        print(f"Saving test results for {arm_name} ... ", end="")
+        save_test_results(
+            test_results=test_results,
+            arm_name=arm_name,
+            output_directory=results_dir,
+            paper_ids=paper_ids,
+            label_order=label_order,
+            test_filename=test_path.name,
+        )
+        print("Done.")
 
     return test_results
 

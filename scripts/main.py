@@ -332,6 +332,17 @@ def parse_args():
         action="store_true",
         help="Re-score baselines from committed §6 Parquet tables instead of retraining.",
     )
+    parser.add_argument(
+        "--save-results",
+        action="store_true",
+        help="Write/update on-disk JSON and NPZ result files. By default False (read-only observation mode).",
+    )
+    parser.add_argument(
+        "--update-artifacts",
+        dest="save_results",
+        action="store_true",
+        help="Alias for --save-results.",
+    )
     return parser.parse_args()
 
 
@@ -394,6 +405,7 @@ def main(args=None, chosen_seed=None):
                 test_df=datasets_dict["test"],
                 label_order=label_order,
                 band_map=train_band_map,
+                save_results=args.save_results,
             )
         else:
             print("\nRunning Majority Baseline:")
@@ -419,6 +431,7 @@ def main(args=None, chosen_seed=None):
                 test_df=datasets_dict["test"],
                 label_order=label_order,
                 band_map=train_band_map,
+                save_results=args.save_results,
             )
         else:
             print("\nRunning TF-IDF + Logistic Regression Baseline:")
@@ -443,6 +456,7 @@ def main(args=None, chosen_seed=None):
             test_df=datasets_dict["test"],
             label_order=label_order,
             band_map=train_band_map,
+            save_results=args.save_results,
         )
         print("SciBERT-full re-scoring is completed.")
 
@@ -459,6 +473,7 @@ def main(args=None, chosen_seed=None):
                 test_df=datasets_dict["test"],
                 label_order=label_order,
                 band_map=train_band_map,
+                save_results=args.save_results,
             )
         else:
             # Fallback to existing test_results JSON if parquet tables haven't been exported yet
@@ -484,13 +499,14 @@ def main(args=None, chosen_seed=None):
         picks_5a = gemma_dir / "5a_test.jsonl"
         if picks_5a.is_file():
             res_5a, pids_5a, ord_5a = score_gemma_picks(str(picks_5a), "test")
-            evaluate_module.save_test_results(
-                test_results=res_5a,
-                arm_name="5a_test",
-                output_directory=scored_dir,
-                paper_ids=pids_5a,
-                label_order=ord_5a,
-            )
+            if args.save_results:
+                evaluate_module.save_test_results(
+                    test_results=res_5a,
+                    arm_name="5a_test",
+                    output_directory=scored_dir,
+                    paper_ids=pids_5a,
+                    label_order=ord_5a,
+                )
             table_rows["Gemma, untuned"] = res_5a
         elif (scored_dir / "test_results_5a_test.json").is_file():
             with open(scored_dir / "test_results_5a_test.json", "r", encoding="utf-8") as f:
@@ -500,13 +516,14 @@ def main(args=None, chosen_seed=None):
         picks_5b = gemma_dir / "5b_test.jsonl"
         if picks_5b.is_file():
             res_5b, pids_5b, ord_5b = score_gemma_picks(str(picks_5b), "test")
-            evaluate_module.save_test_results(
-                test_results=res_5b,
-                arm_name="5b_test",
-                output_directory=scored_dir,
-                paper_ids=pids_5b,
-                label_order=ord_5b,
-            )
+            if args.save_results:
+                evaluate_module.save_test_results(
+                    test_results=res_5b,
+                    arm_name="5b_test",
+                    output_directory=scored_dir,
+                    paper_ids=pids_5b,
+                    label_order=ord_5b,
+                )
             table_rows["Gemma, fine-tuned (QLoRA)"] = res_5b
         elif (scored_dir / "test_results_5b_test.json").is_file():
             with open(scored_dir / "test_results_5b_test.json", "r", encoding="utf-8") as f:
