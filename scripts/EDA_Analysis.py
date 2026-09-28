@@ -1,6 +1,7 @@
 # This python file implements the Exploratory Data Analysis (EDA) part.
 
 # General imports:
+from pathlib import Path
 import pandas as pd
 import matplotlib.pyplot as plt
 from collections import Counter
@@ -234,7 +235,8 @@ def plot_label_analysis(
         dataset_name="Dataset",
         y_tick_interval=50,
         combined=True,
-        figsize=(20, 7)
+        figsize=(20, 7),
+        save_path=None,
     ):
     """
     Plot both label-frequency visualizations for a dataset.
@@ -288,19 +290,27 @@ def plot_label_analysis(
 
     fig.suptitle(f"UAT Label Analysis - {dataset_name}", fontsize=14, fontweight="bold")
     plt.tight_layout()
-    plt.show()
+
+    if save_path:
+        Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(save_path, bbox_inches="tight")
+        print(f"Saved figure to {save_path}")
+        plt.close(fig)
+    else:
+        plt.show()
 
     return None
 
 
 
-def EDA_Analysis(datasets_dict):
+def EDA_Analysis(datasets_dict, save_dir=None):
     """
     The full implementation of the EDA step.
-    This method plots the EDA graphs for each original (train, validation) dataset.
+    This method plots the EDA graphs for each dataset.
 
     Input:
-    --- datasets_dict: dictionary of pandas dataframes (representing the original splits)
+    --- datasets_dict: dictionary of pandas dataframes (representing the splits)
+    --- save_dir: optional directory path to save figures instead of only showing them
     Outputs: None
     """
 
@@ -308,13 +318,45 @@ def EDA_Analysis(datasets_dict):
 
     # Analyze each dataset:
     for name, dataframe in datasets_dict.items():
+        if dataframe is None or len(dataframe) == 0:
+            continue
 
         # Calculate label statistics:
         label_stats = get_label_stats(name, dataframe)
 
-        # Plot label analysis:
-        plot_label_analysis(label_stats, dataset_name=name)
+        save_path = None
+        if save_dir:
+            save_path = Path(save_dir) / f"eda_label_analysis_{name.lower()}.png"
 
-    print("Done plotting the original splits datasets.")
+        # Plot label analysis:
+        plot_label_analysis(label_stats, dataset_name=name, save_path=save_path)
+
+    print("Done plotting the datasets.")
     return None
+
+
+if __name__ == "__main__":
+    import argparse
+    import sys
+    from pathlib import Path
+
+    project_root = Path(__file__).resolve().parents[1]
+    sys.path.insert(0, str(project_root))
+
+    from data.build_split import load_split
+
+    parser = argparse.ArgumentParser(description="Run standalone Exploratory Data Analysis (EDA).")
+    parser.add_argument("--save-dir", default=None, help="Directory to save figures instead of interactive display.")
+    args = parser.parse_args()
+
+    print("Loading split for EDA analysis ... ", end="")
+    split_data = load_split()
+    print("Done.")
+
+    datasets = {
+        "train": split_data["train_df"],
+        "validation": split_data["validation_df"],
+        "test": split_data["test_df"],
+    }
+    EDA_Analysis(datasets, save_dir=args.save_dir)
 
