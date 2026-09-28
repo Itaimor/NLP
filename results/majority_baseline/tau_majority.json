@@ -1,14 +1,14 @@
 {
-    "run_datetime": "27/09/2026 19:37",
-    "commit": "f4846c7602b8a16e5c37b53d1a1efd2e291d0d5d",
-    "has_tracked_changes": false,
+    "run_datetime": "28/09/2026 10:52",
+    "commit": "547ddd5d964659c64311fd8d0ab35afb05358be0",
+    "has_tracked_changes": true,
     "dirty_scope": "tracked *.py sources, excluding result artefacts",
     "taus": {
         "head": 0.04,
         "torso": 0.02,
         "tail": 0.0025
     },
-    "objective": "Maximise each band's validation Micro-F1 over TAU_CANDIDATES (corrected grid, 0.0005-0.98, spanning both extremes).",
+    "objective": "Maximise each band's validation Micro-F1 while applying TAUs candidates.",
     "on_grid_edge": {
         "head": null,
         "torso": null,

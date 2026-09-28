@@ -77,6 +77,183 @@ def build_true_labels_dataframe_for_evaluation(df, label_order):
     return result
 
 
+def rescore_encoder_from_disk(
+    arm_name,
+    results_dir,
+    val_df,
+    test_df,
+    label_order,
+    band_map,
+    val_parquet_path=None,
+    test_parquet_path=None,
+    objective="Maximise each band's validation Micro-F1 over the fixed TAU candidates.",
+):
+    """
+    Re-scores an encoder arm directly from its saved §6 Parquet tables on disk.
+
+    Reads validation and test Parquet files, verifies row alignment against
+    bibcodes, executes choose_tau on validation probabilities, saves tau_<arm_name>.json
+    with validation checksum, evaluates on test probabilities using the selected thresholds,
+    and saves test_results_<arm_name>.json and test_predictions_<arm_name>.npz with
+    test checksum.
+
+    Satisfies §8's requirement: "regenerated from the files by one command, by someone
+    who did not train the model", running on CPU in seconds.
+
+    Inputs:
+    --- arm_name: experiment identifier, e.g. "majority", "tfidf_lr", "scibert_full", "scibert_lora".
+    --- results_dir: directory path containing or intended for the arm's artifacts.
+    --- val_df: validation DataFrame containing 'bibcode' and 'verified_uat_ids'.
+    --- test_df: test DataFrame containing 'bibcode' and 'verified_uat_ids'.
+    --- label_order: fixed ordered list of unique UAT label IDs (strings or ints).
+    --- band_map: dictionary mapping column index to band ("head", "torso", "tail").
+    --- val_parquet_path: optional path to validation Parquet file. If None, resolves from results_dir.
+    --- test_parquet_path: optional path to test Parquet file. If None, resolves from results_dir.
+    --- objective: description string for threshold optimization goal.
+
+    Output:
+    --- test_results: dictionary containing test evaluation metrics returned by evaluate_test.
+    """
+    results_dir = Path(results_dir)
+
+    # Resolves validation Parquet path:
+    if val_parquet_path is not None:
+        val_path = Path(val_parquet_path)
+        if not val_path.is_file() and (results_dir / val_path).is_file():
+            val_path = results_dir / val_path
+    else:
+        candidates = [
+            results_dir / f"{arm_name}_val.parquet",
+            results_dir / f"{arm_name.replace('_baseline', '')}_val.parquet",
+        ]
+        if arm_name in ("tfidf_lr", "tfidf_logistic_regression"):
+            candidates.insert(0, results_dir / "tfidf_lr_val.parquet")
+        val_path = next((p for p in candidates if p.is_file()), None)
+        if val_path is None:
+            raise FileNotFoundError(
+                f"Validation Parquet file not found in {results_dir}. Tried: {[str(c.name) for c in candidates]}"
+            )
+
+    # Resolves test Parquet path:
+    if test_parquet_path is not None:
+        test_path = Path(test_parquet_path)
+        if not test_path.is_file() and (results_dir / test_path).is_file():
+            test_path = results_dir / test_path
+    else:
+        candidates = [
+            results_dir / f"{arm_name}_test.parquet",
+            results_dir / f"{arm_name.replace('_baseline', '')}_test.parquet",
+        ]
+        if arm_name in ("tfidf_lr", "tfidf_logistic_regression"):
+            candidates.insert(0, results_dir / "tfidf_lr_test.parquet")
+        test_path = next((p for p in candidates if p.is_file()), None)
+        if test_path is None:
+            raise FileNotFoundError(
+                f"Test Parquet file not found in {results_dir}. Tried: {[str(c.name) for c in candidates]}"
+            )
+
+    # 1. Reads validation Parquet from disk:
+    print(f"Reading validation Parquet from {val_path.name} ... ", end="")
+    val_score_df = pd.read_parquet(val_path)
+    print("Done.")
+
+    # Validates shape and row alignment:
+    if len(val_score_df) != len(val_df):
+        raise ValueError(
+            f"Row count mismatch in {val_path.name}: "
+            f"expected {len(val_df)} rows, found {len(val_score_df)}"
+        )
+    if "paper_id" in val_score_df.columns:
+        if val_score_df["paper_id"].tolist() != val_df["bibcode"].tolist():
+            raise ValueError(f"Paper ID alignment mismatch between {val_path.name} and validation_df.")
+        val_probs = val_score_df.iloc[:, 1:].to_numpy(dtype=np.float32)
+    else:
+        val_probs = val_score_df.to_numpy(dtype=np.float32)
+
+    if val_probs.shape[1] != len(label_order):
+        raise ValueError(
+            f"Column count mismatch in {val_path.name}: "
+            f"expected {len(label_order)} labels, found {val_probs.shape[1]}"
+        )
+
+    # 2. Builds validation ground truth:
+    val_answers_df = build_true_labels_dataframe_for_evaluation(val_df, label_order)
+    val_labels = val_answers_df.iloc[:, 1:].to_numpy(dtype=np.uint8)
+
+    # 3. Selects thresholds per band via choose_tau:
+    print(f"Selecting validation TAUs for {arm_name} via choose_tau() ...")
+    chosen_taus, tau_sweep = choose_tau(
+        val_probs=val_probs,
+        val_labels=val_labels,
+        band_map=band_map,
+    )
+
+    # 4. Saves tau selection metadata and validation file checksum:
+    print(f"Saving selected validation TAUs to tau_{arm_name}.json ... ", end="")
+    save_tau_selection(
+        chosen_taus=chosen_taus,
+        tau_sweep=tau_sweep,
+        arm_name=arm_name,
+        objective=objective,
+        validation_filename=val_path.name,
+        output_directory=results_dir,
+    )
+    print("Done.")
+
+    # 5. Reads test Parquet from disk:
+    print(f"Reading test Parquet from {test_path.name} ... ", end="")
+    test_score_df = pd.read_parquet(test_path)
+    print("Done.")
+
+    # Validates shape and row alignment:
+    if len(test_score_df) != len(test_df):
+        raise ValueError(
+            f"Row count mismatch in {test_path.name}: "
+            f"expected {len(test_df)} rows, found {len(test_score_df)}"
+        )
+    if "paper_id" in test_score_df.columns:
+        paper_ids = test_score_df["paper_id"].tolist()
+        if paper_ids != test_df["bibcode"].tolist():
+            raise ValueError(f"Paper ID alignment mismatch between {test_path.name} and test_df.")
+        test_probs = test_score_df.iloc[:, 1:].to_numpy(dtype=np.float32)
+    else:
+        paper_ids = test_df["bibcode"].tolist()
+        test_probs = test_score_df.to_numpy(dtype=np.float32)
+
+    if test_probs.shape[1] != len(label_order):
+        raise ValueError(
+            f"Column count mismatch in {test_path.name}: "
+            f"expected {len(label_order)} labels, found {test_probs.shape[1]}"
+        )
+
+    # 6. Builds test ground truth:
+    test_answers_df = build_true_labels_dataframe_for_evaluation(test_df, label_order)
+    test_labels = test_answers_df.iloc[:, 1:].to_numpy(dtype=np.uint8)
+
+    # 7. Evaluates test set:
+    print(f"Calling evaluate_test() for {arm_name} ...")
+    test_results = evaluate_test(
+        test_probs=test_probs,
+        test_labels=test_labels,
+        band_map=band_map,
+        chosen_taus=chosen_taus,
+    )
+
+    # 8. Saves test results and predictions (with test filename for checksum):
+    print(f"Saving test results for {arm_name} ... ", end="")
+    save_test_results(
+        test_results=test_results,
+        arm_name=arm_name,
+        output_directory=results_dir,
+        paper_ids=paper_ids,
+        label_order=label_order,
+        test_filename=test_path.name,
+    )
+    print("Done.")
+
+    return test_results
+
+
 ## Majority baseline ##
 def build_appearances_counter_vector(train_df, label_order):
     """
@@ -153,96 +330,44 @@ def run_majority_baseline(
     majority_vector = build_appearances_counter_vector(train_df, label_order)
     print(" Done.")
 
-    # Calculates the evaluation tables for evaluation.py's function:
-    matrix_for_evaluation_dict = {}
-    for split_name, temp_dataset in [
-        ("val", validation_df),
-        ("test", test_df),
-    ]:
+    val_parquet_path = output_directory / "majority_val.parquet"
+    test_parquet_path = output_directory / "majority_test.parquet"
 
-        # Repeats the same vector for every paper in the given dataset:
-        df_scores = np.tile(majority_vector, (len(temp_dataset), 1))
-
-        # Build the evaluation table:
-        df_output = build_score_dataframe_for_evaluation(
-            temp_dataset,
-            df_scores,
-            label_order,
-        )
-
-        # Saves output:
-        # Note: here the table is saved with the column "paper_id".
-        print( f"Saving majority_{split_name}.parquet in dir ...", end="")
-        name = f"majority_{split_name}.parquet"
-        temp_saves_path = output_directory / name
-        df_output.to_parquet(temp_saves_path, index=False)
-        matrix_for_evaluation_dict[split_name] = df_output
-        print(" Done.")
-
-
-    # Runs validation check with taus
-    # Builds the validation correct-answer table:
-    validation_real_labels_answers = build_true_labels_dataframe_for_evaluation(
+    # Builds and saves standard §6 score tables:
+    val_scores = np.tile(majority_vector, (len(validation_df), 1))
+    df_val_output = build_score_dataframe_for_evaluation(
         validation_df,
+        val_scores,
         label_order,
     )
-
-    # Extracts numeric matrices, skipping the first column which is the paper_id column:
-    val_probs = matrix_for_evaluation_dict["val"].iloc[:, 1:].to_numpy()
-    val_labels = validation_real_labels_answers.iloc[:, 1:].to_numpy()
-
-    # Calls choose_tau from evaluate.py and gets dict of {band:float}:
-    print("Calling choose_tau() from evaluation.py. ")
-    chosen_taus, tau_sweep = choose_tau(
-        val_probs=val_probs,
-        val_labels=val_labels,
-        band_map=train_band_map,
-    )
-
-    # Saves information as instructed:
-    objective = "Maximise each band's validation Micro-F1 while applying TAUs candidates."
-    print("Saving selected validation TAUs ...", end="")
-    save_tau_selection(  # Function in evaluation.py
-        chosen_taus=chosen_taus,
-        tau_sweep=tau_sweep,
-        arm_name="majority",
-        objective=objective,
-        validation_filename="majority_val.parquet",  # Which validation file already exists for documentation
-        output_directory=output_directory,
-    )
+    print(f"Saving {val_parquet_path.name} in dir ...", end="")
+    df_val_output.to_parquet(val_parquet_path, index=False)
     print(" Done.")
 
-    # Runs test with already chosen taus values
-    # Builds the test correct-answer table.
-    test_real_labels_answers = build_true_labels_dataframe_for_evaluation(
+    test_scores = np.tile(majority_vector, (len(test_df), 1))
+    df_test_output = build_score_dataframe_for_evaluation(
         test_df,
+        test_scores,
         label_order,
     )
-
-    # Extracts numeric matrices, skipping the paper_id column.
-    test_probs = matrix_for_evaluation_dict["test"].iloc[:, 1:].to_numpy()
-    test_real_labels = test_real_labels_answers.iloc[:, 1:].to_numpy()
-
-    # Evaluates test using the thresholds selected on validation.
-    print("Calling evaluate_test() from evaluate.py.")
-    test_results = evaluate_test(
-        test_probs=test_probs,
-        test_labels=test_real_labels,
-        band_map=train_band_map,   # Band map according to the training set
-        chosen_taus=chosen_taus,
-    )
-
-    print("Saving test results ...", end="")
-    save_test_results(
-        test_results=test_results,
-        arm_name="majority",
-        output_directory=output_directory,
-        paper_ids=test_df["bibcode"].tolist(),
-        label_order=label_order,
-    )
+    print(f"Saving {test_parquet_path.name} in dir ...", end="")
+    df_test_output.to_parquet(test_parquet_path, index=False)
     print(" Done.")
 
-    return None
+    # Evaluates from the saved tables on disk:
+    test_results = rescore_encoder_from_disk(
+        arm_name="majority",
+        results_dir=output_directory,
+        val_df=validation_df,
+        test_df=test_df,
+        label_order=label_order,
+        band_map=train_band_map,
+        val_parquet_path=val_parquet_path,
+        test_parquet_path=test_parquet_path,
+        objective="Maximise each band's validation Micro-F1 while applying TAUs candidates.",
+    )
+
+    return test_results
 
 
 
@@ -419,80 +544,37 @@ def run_tfidf_logistic_regression_baseline(
     )
 
     # Saves the standard score tables required by the work plan.
-    validation_filename = "tfidf_lr_val.parquet"
-    test_filename = "tfidf_lr_test.parquet"
+    val_parquet_path = output_directory / "tfidf_lr_val.parquet"
+    test_parquet_path = output_directory / "tfidf_lr_test.parquet"
 
-    print(f"Saving {validation_filename} ...", end="")
+    print(f"Saving {val_parquet_path.name} ...", end="")
     validation_score_df.to_parquet(
-        output_directory / validation_filename,
+        val_parquet_path,
         index=False,
     )
     print(" Done.")
 
-    print(f"Saving {test_filename} ...", end="")
+    print(f"Saving {test_parquet_path.name} ...", end="")
     test_score_df.to_parquet(
-        output_directory / test_filename,
+        test_parquet_path,
         index=False,
     )
     print(" Done.")
 
-    # Builds validation correct answers.
-    validation_answers_df = (
-        build_true_labels_dataframe_for_evaluation(
-            validation_df,
-            label_order,
-        )
-    )
-    validation_labels = validation_answers_df.iloc[:, 1:].to_numpy()
-
-    # Selects one threshold per band using validation only.
-    print("Calling choose_tau() from evaluate.py.")
-    chosen_taus, tau_sweep = choose_tau(
-        val_probs=validation_scores,
-        val_labels=validation_labels,
-        band_map=train_band_map,
-    )
-
-    # Saves the selected thresholds and validation-file fingerprint.
-    print("Saving selected validation TAUs ...", end="")
-    save_tau_selection(
-        chosen_taus=chosen_taus,
-        tau_sweep=tau_sweep,
+    # Evaluates from the saved tables on disk:
+    test_results = rescore_encoder_from_disk(
         arm_name="tfidf_lr",
+        results_dir=output_directory,
+        val_df=validation_df,
+        test_df=test_df,
+        label_order=label_order,
+        band_map=train_band_map,
+        val_parquet_path=val_parquet_path,
+        test_parquet_path=test_parquet_path,
         objective=(
             "Maximise each band's validation Micro-F1 "
             "over the fixed TAU candidates."
         ),
-        validation_filename=validation_filename,
-        output_directory=output_directory,
-    )
-    print(" Done.")
-
-    # Builds test correct answers.
-    test_answers_df = build_true_labels_dataframe_for_evaluation(
-        test_df,
-        label_order,
-    )
-    test_labels = test_answers_df.iloc[:, 1:].to_numpy()
-
-    # Applies validation-selected thresholds to test exactly once:
-    print("Calling evaluate_test() from evaluate.py.")
-    test_results = evaluate_test(
-        test_probs=test_scores,
-        test_labels=test_labels,
-        band_map=train_band_map,
-        chosen_taus=chosen_taus,
     )
 
-    # Saves final metrics and binary predictions:
-    print("Saving test results ...", end="")
-    save_test_results(
-        test_results=test_results,
-        arm_name="tfidf_lr",
-        output_directory=output_directory,
-        paper_ids=test_df["bibcode"].tolist(),
-        label_order=label_order,
-    )
-    print(" Done.")
-
-    return None
+    return test_results
