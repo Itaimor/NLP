@@ -23,10 +23,11 @@ import numpy as np
 import pandas as pd
 
 PROJECT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(PROJECT))
 sys.path.insert(0, str(PROJECT / "data"))
 sys.path.insert(0, str(PROJECT / "scripts"))
 
-from build_split import load_split
+from data.build_split import load_split
 
 DEPTHS = [10, 20, 25, 50, 100]
 BANDS = ["head", "torso", "tail"]
