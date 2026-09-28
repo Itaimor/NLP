@@ -60,7 +60,7 @@
       "mps_seconds_per_step": 2.666,
       "cuda_seconds_per_step": 0.2919,
       "speedup": 9.13,
-      "source_of_mps_figure": "results/scibert_lora/run2/cost.json"
+      "source_of_mps_figure": "results/scibert_lora/cost.json"
     }
   },
   "not_measured_here": "The majority and TF-IDF baselines take no gradient steps. Both are sklearn fits (OneVsRestClassifier over LogisticRegression, scripts/baselines.py:384-393), so a per-step figure does not exist for them and section 8's per-arm wording does not apply. Their compute cost is a single fit wall-clock plus peak host memory, which belongs in their own run log."

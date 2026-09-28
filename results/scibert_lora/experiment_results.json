@@ -1,0 +1,21 @@
+{
+  "mode": "lora",
+  "device": "mps",
+  "learning_rate": 0.0001,
+  "pos_weight": 30.0,
+  "selection_metric": "coverage",
+  "num_epochs": 8,
+  "training_time_seconds": 42184.48,
+  "best_epoch": 8,
+  "best_val_loss": 0.1074,
+  "best_tau": 0.3,
+  "val_coverage_50": 0.7165444172779136,
+  "val_macro_f1": 0.04205985367298126,
+  "val_rare_f1": 0.023522576317191124,
+  "test_loss": 0.1021,
+  "test_coverage_50": 0.7412,
+  "test_macro_f1": 0.04085611179471016,
+  "test_rare_f1": 0.021283717826008797,
+  "test_candidates_file": "results/scibert_lora/run/lora/gemma_candidates_test.json",
+  "val_candidates_file": "results/scibert_lora/run/lora/gemma_candidates_validation.json"
+}

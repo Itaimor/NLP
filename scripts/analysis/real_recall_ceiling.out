@@ -1,0 +1,33 @@
+================================================================================
+REAL GENERATOR CANDIDATE RECALL CEILING (COVERAGE@K)
+================================================================================
+
+MODEL: SCIBERT_FULL
+--------------------------------------------------------------------------------
+  [VAL] (2855 papers, 12270 gold labels: head=1261, torso=8222, tail=2787)
+    K= 10 | Overall: 52.53% | Head: 87.47% | Torso: 60.57% | Tail: 12.99%
+    K= 20 | Overall: 67.43% | Head: 94.29% | Torso: 76.73% | Tail: 27.84%
+    K= 25 | Overall: 71.74% | Head: 95.64% | Torso: 80.89% | Tail: 33.94%
+    K= 50 | Overall: 82.89% | Head: 98.02% | Torso: 90.78% | Tail: 52.78%
+    K=100 | Overall: 90.94% | Head: 99.29% | Torso: 95.94% | Tail: 72.41%
+  [TEST] (3025 papers, 13239 gold labels: head=1353, torso=9269, tail=2617)
+    K= 10 | Overall: 53.79% | Head: 88.54% | Torso: 58.99% | Tail: 17.39%
+    K= 20 | Overall: 69.49% | Head: 93.42% | Torso: 75.70% | Tail: 35.12%
+    K= 25 | Overall: 73.95% | Head: 95.27% | Torso: 79.81% | Tail: 42.15%
+    K= 50 | Overall: 85.88% | Head: 98.15% | Torso: 90.04% | Tail: 64.77%
+    K=100 | Overall: 93.23% | Head: 99.26% | Torso: 95.56% | Tail: 81.89%
+
+MODEL: SCIBERT_LORA
+--------------------------------------------------------------------------------
+  [VAL] (2855 papers, 12270 gold labels: head=1261, torso=8222, tail=2787)
+    K= 10 | Overall: 39.93% | Head: 90.17% | Torso: 45.21% | Tail:  1.61%
+    K= 20 | Overall: 53.70% | Head: 94.77% | Torso: 63.73% | Tail:  5.53%
+    K= 25 | Overall: 58.62% | Head: 95.80% | Torso: 70.06% | Tail:  8.07%
+    K= 50 | Overall: 71.65% | Head: 97.62% | Torso: 84.25% | Tail: 22.75%
+    K=100 | Overall: 83.06% | Head: 98.65% | Torso: 93.31% | Tail: 45.78%
+  [TEST] (3025 papers, 13239 gold labels: head=1353, torso=9269, tail=2617)
+    K= 10 | Overall: 41.18% | Head: 90.54% | Torso: 44.86% | Tail:  2.64%
+    K= 20 | Overall: 55.29% | Head: 94.31% | Torso: 63.07% | Tail:  7.57%
+    K= 25 | Overall: 59.91% | Head: 94.97% | Torso: 68.56% | Tail: 11.16%
+    K= 50 | Overall: 74.12% | Head: 97.49% | Torso: 83.23% | Tail: 29.77%
+    K=100 | Overall: 86.38% | Head: 98.67% | Torso: 92.25% | Tail: 59.23%

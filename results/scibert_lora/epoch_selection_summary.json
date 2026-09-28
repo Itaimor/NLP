@@ -1,0 +1,127 @@
+{
+  "cross_check_best_epoch": 8,
+  "cross_check_metric": "Mean band micro-F1 across Head, Torso, Tail using choose_tau",
+  "note": "Post-hoc verification only. The reported checkpoint was selected DURING TRAINING by validation Coverage@50 (SciBERT_experiment.py:669, selection_metric='coverage', recorded in results/scibert_lora/cost.json). This file independently cross-checks that choice using mean band micro-F1 and confirms epoch 8.",
+  "epochs": {
+    "epoch_1": {
+      "epoch": 1,
+      "parquet_file": "results/scibert_lora/val_epochs/scibert_lora_val_epoch_1.parquet",
+      "chosen_taus": {
+        "head": 0.7,
+        "torso": 0.46,
+        "tail": 0.1
+      },
+      "best_micro_f1": {
+        "head": 0.1521,
+        "torso": 0.0561,
+        "tail": 0.0057
+      },
+      "mean_band_micro_f1": 0.0713
+    },
+    "epoch_2": {
+      "epoch": 2,
+      "parquet_file": "results/scibert_lora/val_epochs/scibert_lora_val_epoch_2.parquet",
+      "chosen_taus": {
+        "head": 0.76,
+        "torso": 0.54,
+        "tail": 0.2
+      },
+      "best_micro_f1": {
+        "head": 0.294,
+        "torso": 0.1253,
+        "tail": 0.0251
+      },
+      "mean_band_micro_f1": 0.1481
+    },
+    "epoch_3": {
+      "epoch": 3,
+      "parquet_file": "results/scibert_lora/val_epochs/scibert_lora_val_epoch_3.parquet",
+      "chosen_taus": {
+        "head": 0.82,
+        "torso": 0.66,
+        "tail": 0.3
+      },
+      "best_micro_f1": {
+        "head": 0.3835,
+        "torso": 0.1682,
+        "tail": 0.039
+      },
+      "mean_band_micro_f1": 0.1969
+    },
+    "epoch_4": {
+      "epoch": 4,
+      "parquet_file": "results/scibert_lora/val_epochs/scibert_lora_val_epoch_4.parquet",
+      "chosen_taus": {
+        "head": 0.86,
+        "torso": 0.7,
+        "tail": 0.34
+      },
+      "best_micro_f1": {
+        "head": 0.4205,
+        "torso": 0.2021,
+        "tail": 0.0558
+      },
+      "mean_band_micro_f1": 0.2262
+    },
+    "epoch_5": {
+      "epoch": 5,
+      "parquet_file": "results/scibert_lora/val_epochs/scibert_lora_val_epoch_5.parquet",
+      "chosen_taus": {
+        "head": 0.86,
+        "torso": 0.72,
+        "tail": 0.32
+      },
+      "best_micro_f1": {
+        "head": 0.4549,
+        "torso": 0.2327,
+        "tail": 0.0717
+      },
+      "mean_band_micro_f1": 0.2531
+    },
+    "epoch_6": {
+      "epoch": 6,
+      "parquet_file": "results/scibert_lora/val_epochs/scibert_lora_val_epoch_6.parquet",
+      "chosen_taus": {
+        "head": 0.88,
+        "torso": 0.74,
+        "tail": 0.38
+      },
+      "best_micro_f1": {
+        "head": 0.4699,
+        "torso": 0.2503,
+        "tail": 0.0883
+      },
+      "mean_band_micro_f1": 0.2695
+    },
+    "epoch_7": {
+      "epoch": 7,
+      "parquet_file": "results/scibert_lora/val_epochs/scibert_lora_val_epoch_7.parquet",
+      "chosen_taus": {
+        "head": 0.88,
+        "torso": 0.72,
+        "tail": 0.38
+      },
+      "best_micro_f1": {
+        "head": 0.4775,
+        "torso": 0.2563,
+        "tail": 0.0938
+      },
+      "mean_band_micro_f1": 0.2759
+    },
+    "epoch_8": {
+      "epoch": 8,
+      "parquet_file": "results/scibert_lora/val_epochs/scibert_lora_val_epoch_8.parquet",
+      "chosen_taus": {
+        "head": 0.88,
+        "torso": 0.72,
+        "tail": 0.38
+      },
+      "best_micro_f1": {
+        "head": 0.4809,
+        "torso": 0.259,
+        "tail": 0.0982
+      },
+      "mean_band_micro_f1": 0.2793
+    }
+  }
+}

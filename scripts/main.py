@@ -462,11 +462,13 @@ def main(args=None, chosen_seed=None):
             )
         else:
             # Fallback to existing test_results JSON if parquet tables haven't been exported yet
-            lora_results_json = scibert_lora_path / "run2" / "lora" / "test_results_scibert_lora.json"
+            lora_results_json = scibert_lora_path / "test_results_scibert_lora.json"
+            if not lora_results_json.is_file():
+                lora_results_json = scibert_lora_path / "run" / "lora" / "test_results_scibert_lora.json"
             if lora_results_json.is_file():
                 with open(lora_results_json, "r", encoding="utf-8") as f:
                     table_rows["SciBERT-LoRA (tuned)"] = json.load(f)
-                print("  (Loaded existing results from run2/lora/test_results_scibert_lora.json; export Parquet in Package 3)")
+                print(f"  (Loaded existing results from {lora_results_json.name})")
             else:
                 print(f"  Warning: SciBERT-LoRA artifacts not found in {scibert_lora_path}")
         print("SciBERT-LoRA processing is completed.")

@@ -51,7 +51,7 @@ GRID = "#dcdbd6"
 BANDS = ("head", "torso", "tail")
 
 # Test micro-F1, from results/*/test_results_*.json and
-# results/scibert_lora/run2/lora/test_results_scibert_lora.json.
+# results/scibert_lora/test_results_scibert_lora.json.
 # Order is Table 1's order, weakest to strongest.
 SYSTEMS = [
     ("Majority prior", [0.0914, 0.0385, 0.0055]),

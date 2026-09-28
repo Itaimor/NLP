@@ -1,0 +1,170 @@
+{
+  "scibert_full": {
+    "val": {
+      "num_papers": 2855,
+      "total_gold_labels": 12270,
+      "gold_by_band": {
+        "head": 1261,
+        "torso": 8222,
+        "tail": 2787
+      },
+      "by_depth": {
+        "10": {
+          "overall": 0.5253,
+          "head": 0.8747,
+          "torso": 0.6057,
+          "tail": 0.1299
+        },
+        "20": {
+          "overall": 0.6743,
+          "head": 0.9429,
+          "torso": 0.7673,
+          "tail": 0.2784
+        },
+        "25": {
+          "overall": 0.7174,
+          "head": 0.9564,
+          "torso": 0.8089,
+          "tail": 0.3394
+        },
+        "50": {
+          "overall": 0.8289,
+          "head": 0.9802,
+          "torso": 0.9078,
+          "tail": 0.5278
+        },
+        "100": {
+          "overall": 0.9094,
+          "head": 0.9929,
+          "torso": 0.9594,
+          "tail": 0.7241
+        }
+      }
+    },
+    "test": {
+      "num_papers": 3025,
+      "total_gold_labels": 13239,
+      "gold_by_band": {
+        "head": 1353,
+        "torso": 9269,
+        "tail": 2617
+      },
+      "by_depth": {
+        "10": {
+          "overall": 0.5379,
+          "head": 0.8854,
+          "torso": 0.5899,
+          "tail": 0.1739
+        },
+        "20": {
+          "overall": 0.6949,
+          "head": 0.9342,
+          "torso": 0.757,
+          "tail": 0.3512
+        },
+        "25": {
+          "overall": 0.7395,
+          "head": 0.9527,
+          "torso": 0.7981,
+          "tail": 0.4215
+        },
+        "50": {
+          "overall": 0.8588,
+          "head": 0.9815,
+          "torso": 0.9004,
+          "tail": 0.6477
+        },
+        "100": {
+          "overall": 0.9323,
+          "head": 0.9926,
+          "torso": 0.9556,
+          "tail": 0.8189
+        }
+      }
+    }
+  },
+  "scibert_lora": {
+    "val": {
+      "num_papers": 2855,
+      "total_gold_labels": 12270,
+      "gold_by_band": {
+        "head": 1261,
+        "torso": 8222,
+        "tail": 2787
+      },
+      "by_depth": {
+        "10": {
+          "overall": 0.3993,
+          "head": 0.9017,
+          "torso": 0.4521,
+          "tail": 0.0161
+        },
+        "20": {
+          "overall": 0.537,
+          "head": 0.9477,
+          "torso": 0.6373,
+          "tail": 0.0553
+        },
+        "25": {
+          "overall": 0.5862,
+          "head": 0.958,
+          "torso": 0.7006,
+          "tail": 0.0807
+        },
+        "50": {
+          "overall": 0.7165,
+          "head": 0.9762,
+          "torso": 0.8425,
+          "tail": 0.2275
+        },
+        "100": {
+          "overall": 0.8306,
+          "head": 0.9865,
+          "torso": 0.9331,
+          "tail": 0.4578
+        }
+      }
+    },
+    "test": {
+      "num_papers": 3025,
+      "total_gold_labels": 13239,
+      "gold_by_band": {
+        "head": 1353,
+        "torso": 9269,
+        "tail": 2617
+      },
+      "by_depth": {
+        "10": {
+          "overall": 0.4118,
+          "head": 0.9054,
+          "torso": 0.4486,
+          "tail": 0.0264
+        },
+        "20": {
+          "overall": 0.5529,
+          "head": 0.9431,
+          "torso": 0.6307,
+          "tail": 0.0757
+        },
+        "25": {
+          "overall": 0.5991,
+          "head": 0.9497,
+          "torso": 0.6856,
+          "tail": 0.1116
+        },
+        "50": {
+          "overall": 0.7412,
+          "head": 0.9749,
+          "torso": 0.8323,
+          "tail": 0.2977
+        },
+        "100": {
+          "overall": 0.8638,
+          "head": 0.9867,
+          "torso": 0.9225,
+          "tail": 0.5923
+        }
+      }
+    }
+  }
+}
