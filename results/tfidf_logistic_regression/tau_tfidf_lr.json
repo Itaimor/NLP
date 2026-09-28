@@ -1,6 +1,6 @@
 {
-    "run_datetime": "28/09/2026 11:01",
-    "commit": "126040d68c4b86a23209da17a37af689fb0ea53b",
+    "run_datetime": "28/09/2026 11:22",
+    "commit": "1e3a061699ca73fe1e2df6066c59cea4e9b6593e",
     "has_tracked_changes": true,
     "dirty_scope": "tracked *.py sources, excluding result artefacts",
     "taus": {
@@ -15,7 +15,7 @@
         "tail": null
     },
     "validation_file": "tfidf_lr_val.parquet",
-    "validation_checksum": "9bce08088e5b563f71c568504a10b18d425e16c68cf7df0dc22cb2663a8e25a3",
+    "validation_checksum": "25b877e8f97c9db9345394c56efdb577b2ab75e918740385f304f3c67b67a10b",
     "tau_sweep": {
         "head": [
             {

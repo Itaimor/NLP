@@ -1,0 +1,31 @@
+{
+  "arm": "majority_baseline",
+  "base_architecture": "Majority Frequency Prior",
+  "seed": 42,
+  "hyperparameters": {
+    "method": "train_label_frequencies",
+    "num_labels": 1864,
+    "selection_metric": "validation_micro_f1_per_band"
+  },
+  "training_cost": {
+    "device": "arm (CPU)",
+    "training_wall_clock_seconds": 0.0169,
+    "total_wall_clock_seconds": 7.8093,
+    "peak_memory": "~1051.8 MB",
+    "trainable_parameters": 0,
+    "total_parameters": 1864
+  },
+  "model_checkpoint": {
+    "test_micro_f1_head": 0.0914,
+    "test_micro_f1_torso": 0.0385,
+    "test_micro_f1_tail": 0.0055,
+    "test_micro_f1_overall": 0.0283,
+    "mean_predictions_per_paper": 37.0
+  },
+  "provenance": {
+    "run_datetime": "28/09/2026 11:17",
+    "commit": "1e3a061699ca73fe1e2df6066c59cea4e9b6593e",
+    "has_tracked_changes": true,
+    "dirty_scope": "tracked *.py sources, excluding result artefacts"
+  }
+}

@@ -1,16 +1,35 @@
 # This file implements the following baselines:
 # majority-frequency and TF-IDF + logistic regression baselines.
 
+import time
+import json
+import resource
+import platform
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
-from pathlib import Path
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.multiclass import OneVsRestClassifier
 
-from evaluate import choose_tau, save_tau_selection, evaluate_test, save_test_results
+from evaluate import (
+    choose_tau,
+    save_tau_selection,
+    evaluate_test,
+    save_test_results,
+    run_provenance,
+)
 from scibert_dataset import clean_astronomy_text
+
+
+def get_peak_memory_mb():
+    """Returns peak resident set size (RSS) in MB for the current process."""
+    raw = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    if platform.system() == "Darwin":
+        return raw / (1024 * 1024)
+    return raw / 1024
 
 
 
@@ -319,6 +338,8 @@ def run_majority_baseline(
     Output: None
     """
 
+    t0 = time.perf_counter()
+
     # Creates the directory:
     print("Builds directory ...", end="")
     output_directory = Path(save_directory)
@@ -327,7 +348,9 @@ def run_majority_baseline(
 
     # Calculate label frequencies from the training set:
     print("Calculates majority vector ...", end="")
+    t_fit_start = time.perf_counter()
     majority_vector = build_appearances_counter_vector(train_df, label_order)
+    fit_duration = time.perf_counter() - t_fit_start
     print(" Done.")
 
     val_parquet_path = output_directory / "majority_val.parquet"
@@ -366,6 +389,44 @@ def run_majority_baseline(
         test_parquet_path=test_parquet_path,
         objective="Maximise each band's validation Micro-F1 while applying TAUs candidates.",
     )
+
+    total_duration = time.perf_counter() - t0
+    peak_mb = get_peak_memory_mb()
+
+    # Emits run-log and cost telemetry required by §8 Stage 3:
+    cost_data = {
+        "arm": "majority_baseline",
+        "base_architecture": "Majority Frequency Prior",
+        "seed": 42,
+        "hyperparameters": {
+            "method": "train_label_frequencies",
+            "num_labels": len(label_order),
+            "selection_metric": "validation_micro_f1_per_band",
+        },
+        "training_cost": {
+            "device": f"{platform.processor() or 'Apple Silicon'} (CPU)",
+            "training_wall_clock_seconds": round(fit_duration, 4),
+            "total_wall_clock_seconds": round(total_duration, 4),
+            "peak_memory": f"~{peak_mb:.1f} MB",
+            "trainable_parameters": 0,
+            "total_parameters": len(label_order),
+        },
+        "model_checkpoint": {
+            "test_micro_f1_head": round(test_results["per_band"]["head"]["micro_f1"], 4),
+            "test_micro_f1_torso": round(test_results["per_band"]["torso"]["micro_f1"], 4),
+            "test_micro_f1_tail": round(test_results["per_band"]["tail"]["micro_f1"], 4),
+            "test_micro_f1_overall": round(test_results.get("overall", {}).get("micro_f1", 0.0), 4),
+            "mean_predictions_per_paper": round(test_results.get("mean_predictions_per_paper", 0.0), 2),
+        },
+        "provenance": {
+            **run_provenance(),
+        },
+    }
+    cost_file = output_directory / "cost.json"
+    print(f"Saving cost telemetry to {cost_file.name} ... ", end="")
+    with cost_file.open("w", encoding="utf-8") as f:
+        json.dump(cost_data, f, indent=2)
+    print("Done.")
 
     return test_results
 
@@ -438,6 +499,8 @@ def run_tfidf_logistic_regression_baseline(
     Output: None.
     """
 
+    t0 = time.perf_counter()
+
     # Creates the output directory:
     print("Builds directory ...", end="")
     output_directory = Path(save_directory)
@@ -454,6 +517,7 @@ def run_tfidf_logistic_regression_baseline(
     # Fits TF-IDF on train only and transforms validation and test:
     # The parameters were chosen due to train's statistics analysis.
     print("Fits TF-IDF vectorizer ...", end="")
+    t_vec_start = time.perf_counter()
     vectorizer = TfidfVectorizer(
         lowercase=True,
         strip_accents='unicode',
@@ -469,6 +533,7 @@ def run_tfidf_logistic_regression_baseline(
     train_features = vectorizer.fit_transform(train_texts)  # Trains and applies
     validation_features = vectorizer.transform(validation_texts)  # Applies
     test_features = vectorizer.transform(test_texts)  # Applies
+    vec_duration = time.perf_counter() - t_vec_start
     print(" Done.")
 
     # Builds train correct-answer matrix in label_order.
@@ -500,12 +565,13 @@ def run_tfidf_logistic_regression_baseline(
             "The number of train-label columns must match label_order."
         )
 
-    # Trains one binary Logistic Regression classifier per label.from
+    # Trains one binary Logistic Regression classifier per label.
     # OneVsRestClassifier splits the multi-label task to 1864 binary tasks.
     #   train_features: [15,822 papers, TF-IDF features].
     #   train_labels: [15,822 papers, 1,864 labels].
     #   OneVsRest trains one binary LR per label using train_labels[:, i].
     print("Trains multi-label logistic regression classifier ...", end="")
+    t_fit_start = time.perf_counter()
     classifier = OneVsRestClassifier(
         LogisticRegression(
             C=1.0,
@@ -516,11 +582,12 @@ def run_tfidf_logistic_regression_baseline(
         n_jobs=1,
     )
     classifier.fit(train_features, train_labels)
+    fit_duration = time.perf_counter() - t_fit_start
     print(" Done.")
 
     # Produces one probability per paper and label.
     print("Calculates validation and test probabilities ...", end="")
-
+    t_pred_start = time.perf_counter()
     validation_scores = np.asarray(
         classifier.predict_proba(validation_features),
         dtype=np.float32,
@@ -529,6 +596,7 @@ def run_tfidf_logistic_regression_baseline(
         classifier.predict_proba(test_features),
         dtype=np.float32,
     )
+    pred_duration = time.perf_counter() - t_pred_start
     print(" Done.")
 
     # Wraps scores with paper IDs and label-ID column names.
@@ -576,5 +644,67 @@ def run_tfidf_logistic_regression_baseline(
             "over the fixed TAU candidates."
         ),
     )
+
+    total_duration = time.perf_counter() - t0
+    peak_mb = get_peak_memory_mb()
+    num_features = train_features.shape[1]
+    num_labels = len(label_order)
+    trainable_params = num_features * num_labels + num_labels
+    seconds_per_classifier = round(fit_duration / num_labels, 4)
+
+    # Emits run-log and cost telemetry required by §8 Stage 3:
+    cost_data = {
+        "arm": "tfidf_logistic_regression",
+        "base_architecture": "TfidfVectorizer + OneVsRestClassifier(LogisticRegression)",
+        "seed": 42,
+        "hyperparameters": {
+            "vectorizer": {
+                "max_features": None,
+                "ngram_range": [1, 2],
+                "sublinear_tf": True,
+                "min_df": 3,
+                "max_df": 0.95,
+                "strip_accents": "unicode",
+            },
+            "classifier": {
+                "C": 1.0,
+                "solver": "liblinear",
+                "max_iter": 1000,
+                "n_jobs": 1,
+                "random_state": 42,
+            },
+            "num_labels": num_labels,
+            "vocab_features": num_features,
+            "selection_metric": "validation_micro_f1_per_band",
+        },
+        "training_cost": {
+            "device": f"{platform.processor() or 'Apple Silicon'} (CPU)",
+            "num_classifiers": num_labels,
+            "feature_extraction_seconds": round(vec_duration, 2),
+            "fitting_wall_clock_seconds": round(fit_duration, 2),
+            "prediction_wall_clock_seconds": round(pred_duration, 2),
+            "total_wall_clock_seconds": round(total_duration, 2),
+            "seconds_per_classifier": seconds_per_classifier,
+            "seconds_per_step": seconds_per_classifier,
+            "peak_memory": f"~{peak_mb:.1f} MB",
+            "trainable_parameters": trainable_params,
+            "total_parameters": trainable_params,
+        },
+        "model_checkpoint": {
+            "test_micro_f1_head": round(test_results["per_band"]["head"]["micro_f1"], 4),
+            "test_micro_f1_torso": round(test_results["per_band"]["torso"]["micro_f1"], 4),
+            "test_micro_f1_tail": round(test_results["per_band"]["tail"]["micro_f1"], 4),
+            "test_micro_f1_overall": round(test_results.get("overall", {}).get("micro_f1", 0.0), 4),
+            "mean_predictions_per_paper": round(test_results.get("mean_predictions_per_paper", 0.0), 2),
+        },
+        "provenance": {
+            **run_provenance(),
+        },
+    }
+    cost_file = output_directory / "cost.json"
+    print(f"Saving cost telemetry to {cost_file.name} ... ", end="")
+    with cost_file.open("w", encoding="utf-8") as f:
+        json.dump(cost_data, f, indent=2)
+    print("Done.")
 
     return test_results
