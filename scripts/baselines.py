@@ -3,7 +3,10 @@
 
 import time
 import json
-import resource
+try:
+    import resource
+except ImportError:
+    resource = None
 import platform
 from pathlib import Path
 
@@ -26,10 +29,15 @@ from scibert_dataset import clean_astronomy_text
 
 def get_peak_memory_mb():
     """Returns peak resident set size (RSS) in MB for the current process."""
-    raw = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    if platform.system() == "Darwin":
-        return raw / (1024 * 1024)
-    return raw / 1024
+    if resource is None:
+        return 0.0
+    try:
+        raw = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        if platform.system() == "Darwin":
+            return raw / (1024 * 1024)
+        return raw / 1024
+    except Exception:
+        return 0.0
 
 
 
