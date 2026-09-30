@@ -12,8 +12,10 @@ prior — val coverage@50 0.291, tail 0/2,787 — and must not be used).
 | `tau_scibert_full.json`, `test_results_scibert_full.json` | **re-scored 22 Sept — reportable** | Regenerated under the corrected `TAU_CANDIDATES` grid (0.0005–0.98, a strict superset of the old 0.005–0.54). Chosen taus are now **0.92 / 0.82 / 0.54, all interior** — the search is no longer truncated. Test micro-F1 head **0.5518**, torso **0.3566**, tail **0.2150**; predictions/paper 15.3 → **5.48** (gold 4.38 on test). Reproduces the 20 Sept chair re-run exactly. |
 
 **Recorded run provenance is incomplete:** `commit = dcb82e2` (Shai's HEAD) with `has_tracked_changes = true`;
-epochs completed, learning rate, `--force-restart` vs resume, and whether `best_model.pt` or `checkpoint.pt`
-produced the tensors are not recorded anywhere in the repo. Trainer changes in `366f46c`: `BCEWithLogitsLoss(pos_weight=30)`,
+`--force-restart` vs resume, and whether `best_model.pt` or `checkpoint.pt`
+produced the tensors are not recorded anywhere in the repo. **Superseded in part:** epochs completed (8),
+both learning rates (2e-5 backbone / 1e-4 head), batch size, seed and seconds per step ARE now recorded, in
+`results/scibert_full/cost.json`. Trainer changes in `366f46c`: `BCEWithLogitsLoss(pos_weight=30)`,
 checkpoint selection on validation coverage@50, head LR ≥ 5× backbone.
 
 **Derived here:** `results/shortlists/scibert_full_top50_{val,test}.jsonl` via `scripts/derive_scibert_shortlists.py`

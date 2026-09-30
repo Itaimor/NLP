@@ -10,9 +10,9 @@ were first run on. Point it at this repository's `.hf_cache` before re-running.
 
 | script | what it measured | where it is reported |
 |---|---|---|
-| `threshold_sweep.py` | rare-band F1 against the decision threshold — 0.0078 at the 0.5 default vs 0.324 tuned | Introduction, the ~40x threshold claim |
-| `global_vs_band_tau.py` | one threshold for all bands vs one per band — 0.156 / 0.258 / 0.324 | Introduction, the further 2x |
-| `honest_tau_macro.py` | rare-band macro-F1 under each denominator — 0.32 vs 0.08 | Introduction, the denominator claim |
+| `threshold_sweep.py` | rare-band F1 against the decision threshold — 0.0078 at the 0.5 default vs 0.324 tuned | Introduction, the ~40x threshold claim. **The paper quotes the micro-optimised row instead: 0.008 vs 0.30.** |
+| `global_vs_band_tau.py` | one threshold for all bands vs one per band — 0.156 / 0.258 / 0.324 | Introduction, the further 2x. **These three mix objectives** (micro-opt global / macro-opt global / macro-opt per band); the paper's pair is the micro-optimised 0.16 global vs 0.30 per band. |
+| `honest_tau_macro.py` | rare-band macro-F1 under each denominator — 0.32 vs 0.08 | Introduction, the denominator claim. **The paper reports 0.30 vs 0.08**, the micro-optimised row. |
 | `scoreability_curve.py`, `unscoreable_probe.py` | how many rare concepts have no test instance — 1,059 of 1,469 | Introduction, the scoreability claim |
 | `recall_ceiling.py` | coverage@50 of the shortlist — the ceiling any selector inherits | Method / Results |
 | `carve_cost_tfidf.py` | cost of carving the validation split | Method |
