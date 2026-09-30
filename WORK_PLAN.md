@@ -2,6 +2,23 @@
 
 **Written 10 September 2026, last revised 13 September. Submission: 30 September 2026.**
 
+> **STATUS (30 September 2026): this is a planning record. The paper in `paper/` is authoritative
+> wherever the two differ.** It is kept as the record of what was decided and why, not as a
+> description of the finished work. Two known differences, both deliberate:
+>
+> 1. **The TF-IDF threshold figures here (0.0078 / 0.156 / 0.258 / 0.324, §2 and §4 and §9.3) come
+>    from the macro-optimised threshold row** of `scripts/analysis/honest_tau_seed42_protocol.out`,
+>    and §4's trio mixes objectives. The paper reports the **micro-optimised** row throughout —
+>    0.008 at the 0.5 default, 0.16 for one global cutoff, **0.30** per band, and 0.30 vs 0.08 for
+>    the two denominators — because micro-F1 is the objective the paper's own protocol states. Both
+>    sets are real measurements of the same predictions under different tuning objectives; the
+>    paper's is the internally consistent one.
+> 2. **§9.1 and §9.2 rest on the word-counting stand-in's rare coverage at depth 50 (81.6%).** The
+>    real SciBERT generator was later measured at **52.8% validation / 64.8% test**
+>    (`scripts/analysis/real_recall_ceiling.out`), which is what `appendix.tex` Table 4 and
+>    `limitations.tex` report. The astroBERT decision stands on other grounds (the headline holds
+>    the generator fixed across both arms), but the "already nearly maxed out" reasoning does not.
+
 ## The numbers that keep coming up
 
 Every figure in this document is one of these. If you hit a bare number below and cannot remember

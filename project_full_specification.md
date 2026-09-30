@@ -5,6 +5,10 @@
 > **STATUS (13 September 2026): this document is superseded by `WORK_PLAN.md` wherever the two differ.**
 > It was last revised on 31 August and is kept as the record of the reasoning; the plan carries the
 > decisions. Read the following ten items as struck through:
+>
+> **(30 September 2026: `WORK_PLAN.md` is in turn superseded by the paper in `paper/`. The threshold
+> figures in items 1 and 2 below are the macro-optimised row; the paper reports the micro-optimised
+> one, 0.008 / 0.16 / 0.30. See the status banner at the top of `WORK_PLAN.md`.)**
 > 1. §4 / §8 / §10 / §12 — the threshold effect is "24.6x" *(a tuned-on-test figure)*. Honest figure,
 >    tau tuned on the carved validation split, seed-42 split: rare-band macro-F1 0.0078 → 0.324 (~40x);
 >    micro 0.011 → 0.362. Robust claim: "more than 20x, and it survives honest tuning."

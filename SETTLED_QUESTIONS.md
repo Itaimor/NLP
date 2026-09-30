@@ -3,6 +3,24 @@
 *Companion to `WORK_PLAN.md` §9. These four questions were argued at length before the plan was fixed; the
 answers are in the plan, the reasoning is here. Nothing in this file is an open decision.*
 
+> **STATUS (30 September 2026): a reasoning record from mid-September. The paper in `paper/` is
+> authoritative wherever the two differ.** Two known differences:
+>
+> 1. **The threshold figures below (0.0078 / 0.156 / 0.258 / 0.324, and the 0.324 vs 0.082
+>    denominator pair) are the macro-optimised threshold row** of
+>    `scripts/analysis/honest_tau_seed42_protocol.out`. The paper reports the **micro-optimised**
+>    row — 0.008, 0.16 global, **0.30** per band, and 0.30 vs 0.08 — because micro-F1 is the
+>    objective its protocol states. Both are real measurements of the same predictions under
+>    different tuning objectives.
+> 2. **The depth-50 coverage figures (72.0 / 81.6 / 89.2%) are the TF-IDF stand-in's**, as the note
+>    at the end of that section already says. The real SciBERT generator measures **33.9 / 52.8 /
+>    72.4% on validation and 42.2 / 64.8 / 81.9% on test** (`real_recall_ceiling.out`), which is
+>    what `appendix.tex` Table 4 reports. The draft sentence "bounded above by 81.6%" was never
+>    used; the paper states the real ceiling and treats it as a limitation.
+>
+> Note for anyone sweeping this file: the `0.3243` at the astroBERT row of the Table 5 comparison
+> is **Alkan et al.'s own reported score**, not ours. It is correct and coincidental.
+
 
 ### What I measured first, and why
 
