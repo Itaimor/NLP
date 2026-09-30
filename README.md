@@ -13,8 +13,8 @@ We evaluate six systems across 1,864 UAT concepts stratified into frequency band
 2. **TF-IDF + One-vs-Rest Logistic Regression** (sparse n-gram baseline)
 3. **SciBERT-alone** (full transformer backbone fine-tuning)
 4. **SciBERT-LoRA** (parameter-efficient adapter fine-tuning)
-5. **Gemma 2B Untuned** (top-50 shortlist generative extraction)
-6. **Gemma 2B Fine-Tuned / QLoRA** (shortlist-conditioned generative re-ranker)
+5. **Gemma 3 4B Untuned** (top-50 shortlist generative extraction)
+6. **Gemma 3 4B Fine-Tuned / QLoRA** (shortlist-conditioned generative re-ranker)
 
 ---
 
@@ -80,7 +80,12 @@ python scripts/main.py --arm rescore_all
 | **SciBERT-alone (tuned)** | 0.5518 | 0.3566 | 0.2150 | 0.3435 | 5.48 |
 | **SciBERT-LoRA (tuned)** | 0.4764 | 0.2636 | 0.1190 | 0.2501 | 7.20 |
 | **Gemma, untuned** | 0.5530 | 0.3703 | 0.2943 | 0.3778 | 8.79 |
+| &nbsp;&nbsp;↳ shuffled candidate order | 0.4631 | 0.2906 | 0.2272 | 0.2908 | 8.94 |
 | **Gemma, fine-tuned (QLoRA)** | 0.5690 | 0.3783 | 0.2897 | 0.3781 | 5.68 |
+| &nbsp;&nbsp;↳ shuffled candidate order | 0.5661 | 0.3702 | 0.2794 | 0.3698 | 5.65 |
+
+The two *shuffled* rows re-score the same two arms on shuffled candidate lists. Only the
+fine-tuned arm keeps its gains, which is the paper's second headline result.
 
 ---
 
