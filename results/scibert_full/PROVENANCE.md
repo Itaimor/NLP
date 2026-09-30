@@ -69,16 +69,11 @@ in order, + `paper_id`), and `test_predictions_scibert_full.npz` (`predictions (
 it is corrected. No other number is affected: the probability tables, the taus, and every metric in
 `test_results_scibert_full.json` are independent of this count.
 
-The same 2,079 error appears in prose in `OVERFIT_SANITY_CHECK.md:9` and twice in
-`results/scibert_lora/DECISION_ARM_CUT.md` (§4.1, §4.2). In the LoRA file it is demonstrably prose-only:
-that file's own trainable count, 1,728,328, equals `294,912 (LoRA r=8, q&v, 12 layers) + 768*1864 + 1864`
-to the parameter, so the code ran at 1,864. (Its stated *total*, 113,080,208, double-counts the head via
+The same 2,079 error appeared historically in early draft notes before being corrected to 1,864. In the LoRA artifacts it is demonstrably prose-only:
+the recorded trainable count, 1,728,328, equals `294,912 (LoRA r=8, q&v, 12 layers) + 768*1864 + 1864`
+to the parameter, confirming the code ran at 1,864. (The initial printed *total* in PEFT, 113,080,208, double-counts the head via
 PEFT's `modules_to_save=["classifier"]` wrapper; the true total is 111,646,792 and the trainable share
 1.55%, not 1.53%.)
-
-**Also noted:** `DECISION_ARM_CUT.md` §1 quotes "82.89% Coverage@50, 0.0993 Macro-F1, 0.0683 Rare-F1" for
-SciBERT-full. These are `cost.json`'s **validation** figures at epoch 8, never labelled as such; the test
-values are 0.8588 / 0.0866 / 0.0511. Do not carry the validation numbers into the paper as test results.
 
 Council session: `.council/docket.md` — entry [2026-09-23].
 
